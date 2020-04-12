@@ -140,6 +140,7 @@ def main():
     s.preprocess()
     h = s.histories[0]
     f = s.generate_feature_vector(h)
+    print(np.sum(f))
     return
 
 
