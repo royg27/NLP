@@ -155,7 +155,11 @@ def main():
     s.preprocess()
     h = s.histories[0]
     f = s.generate_feature_vector(h)
+<<<<<<< HEAD
     fs = s.generate_expected_count_features(h)
+=======
+    print(np.sum(f))
+>>>>>>> 8644bdce92c434c286c8142e562bae3e2dbe10c4
     return
 
 
