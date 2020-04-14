@@ -2,8 +2,8 @@ import os
 import numpy as np
 import re
 
-class textProcessor:
 
+class textProcessor:
     def __init__(self, path_file_name):
         self.file = open(path_file_name,'r')
         self.lines = self.file.readlines()
@@ -20,6 +20,8 @@ class textProcessor:
 
         self.words_set = set()
         self.tags_set = set('*')
+        # length of feature vector
+        self.f_length = -1
 
     def preprocess(self):
         # Split all the sentences and all the words and tags
@@ -56,7 +58,9 @@ class textProcessor:
         self.fill_feature_103_dictionary()
         self.fill_feature_104_dictionary()
 
-        # print(self.histories[2])
+        self.f_length = len(self.feature_100) + len(self.feature_101) + len(self.feature_102) + len(self.feature_103) +\
+                        len(self.feature_104) + len(self.feature_105)
+
 
     def fill_feature_100_dictionary(self):
         idx = 0
@@ -131,17 +135,30 @@ class textProcessor:
         return final_feature_vector
 
 
+    def generate_expected_count_features(self, history):
+        # history = (t-2,t-1,t,w)
+        t_2 = history[0]
+        t_1 = history[1]
+        tag = history[2]
+        word = history[3]
 
+        expected_count_features = []
+        for possible_tag in self.tags_set:
+            possible_history = (t_2, t_1, possible_tag, word)
+            expected_count_features.append(self.generate_feature_vector(possible_history))
+        assert len(expected_count_features) == len(self.tags_set)
+        return expected_count_features
 
-
-
+"""""
 def main():
     s = textProcessor('data/train1.wtag')
     s.preprocess()
     h = s.histories[0]
     f = s.generate_feature_vector(h)
+    fs = s.generate_expected_count_features(h)
     return
 
 
 if __name__ == "__main__":
     main()
+"""
