@@ -39,9 +39,12 @@ class MEMM:
     def fit(self, num_epochs):
         for epoch in range(num_epochs):
             grad = np.zeros(self.processor.f_length)
-            for h in self.processor.histories:
-                f_x_y = self.processor.generate_feature_vector(h)
-                f_x_y_tags = self.processor.generate_expected_count_features(h)
-                grad += self.calc_gradient(f_x_y, f_x_y_tags)
-            #   update v vector
-            self.v += (self.lr * grad)
+            # run over sentences
+            for H in self.processor.histories:
+                # run over histories of a given sentence
+                for h in H:
+                    f_x_y = self.processor.generate_feature_vector(h)
+                    f_x_y_tags = self.processor.generate_expected_count_features(h)
+                    grad += self.calc_gradient(f_x_y, f_x_y_tags)
+                #   update v vector after a batch - a sentence
+                self.v += (self.lr * grad)

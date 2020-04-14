@@ -9,7 +9,7 @@ class textProcessor:
         self.lines = self.file.readlines()
         self.sentences = []
         self.tags = []
-        self.histories =[]
+        self.histories = []
 
         self.feature_100 = {}
         self.feature_101 = {}
@@ -41,6 +41,7 @@ class textProcessor:
         # Create all the histories needed
         word_count = 0
         for sentence_idx, sentence in enumerate(self.sentences):
+            sentence_history = []
             for word_idx, word in enumerate(sentence):
                 word_count += 1
                 # history = ( t-2,t-1,t,w )
@@ -48,10 +49,10 @@ class textProcessor:
                 t_1 = self.tags[sentence_idx][word_idx-1] if word_idx > 0 else '*'
                 t_2 = self.tags[sentence_idx][word_idx-2] if word_idx > 1 else '*'
                 curr_history = (t_2, t_1, t, word)
-                self.histories.append(curr_history)
+                sentence_history.append(curr_history)
                 self.words_set.add(word)
                 self.tags_set.add(t)
-        assert len(self.histories) == word_count
+            self.histories.append(sentence_history)
 
         self.fill_feature_100_dictionary()
         self.fill_feature_101_102_105_dictionary()
@@ -148,21 +149,3 @@ class textProcessor:
             expected_count_features.append(self.generate_feature_vector(possible_history))
         assert len(expected_count_features) == len(self.tags_set)
         return expected_count_features
-
-"""""
-def main():
-    s = textProcessor('data/train1.wtag')
-    s.preprocess()
-    h = s.histories[0]
-    f = s.generate_feature_vector(h)
-<<<<<<< HEAD
-    fs = s.generate_expected_count_features(h)
-=======
-    print(np.sum(f))
->>>>>>> 8644bdce92c434c286c8142e562bae3e2dbe10c4
-    return
-
-
-if __name__ == "__main__":
-    main()
-"""

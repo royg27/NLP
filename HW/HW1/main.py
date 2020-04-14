@@ -6,11 +6,13 @@ def check_text_processor_basic():
     #full of assert, should just finish running
     s = textProcessor('data/train1.wtag')
     s.preprocess()
-    h = s.histories[0]
+    H = s.histories
+    h = H[0][0]
     f = s.generate_feature_vector(h)
     fs = s.generate_expected_count_features(h)
 
 def main():
+    #check_text_processor_basic()
     s = textProcessor('data/train1.wtag')
     s.preprocess()
     model = MEMM(s)
