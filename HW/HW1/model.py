@@ -1,5 +1,6 @@
 import numpy as np
 from textProcessor import textProcessor
+import settings
 
 class MEMM:
     def __init__(self, textProcessor : textProcessor, lamda = 0.01, lr = 0.01, sigma = 0.001):
@@ -23,6 +24,36 @@ class MEMM:
         assert (soft_max_res >= 0 and soft_max_res <=1)
         return soft_max_res
 
+
+    def vectorized_softmax(self,F):
+        """
+
+        :param F: is N*M where each row is a sparse vector
+        :return:
+        """
+        #assert self.v.shape[0] == F.shape[1]
+        shape = F.shape
+        F_V = F.dot(self.v)
+        #assert F_V.shape[0] == F.shape[0]
+        exp_F_V = np.exp(F_V)
+        sum_exp_F_V = np.sum(exp_F_V)
+        softmax_val = exp_F_V/sum_exp_F_V
+        return softmax_val
+
+    def vectorized_calc_gradient(self, f, F):
+        """
+        :param f:
+        :param F:
+        :return:
+        """
+        emprical_counts = f
+        P = self.vectorized_softmax(F)[:,np.newaxis]
+        expected_counts = F.multiply(P)
+        expected_counts = expected_counts.sum(axis=0)
+        expected_counts = np.ravel(expected_counts)
+        grad = emprical_counts - expected_counts - (self.lamda * self.v)
+        return grad
+
     def calc_gradient(self, f_x_y, f_x_y_tags):
         """
         :param f_x_y: f(x,y)
@@ -40,11 +71,17 @@ class MEMM:
         for epoch in range(num_epochs):
             grad = np.zeros(self.processor.f_length)
             # run over sentences
-            for H in self.processor.histories:
+            for idx,H in enumerate(self.processor.histories):
                 # run over histories of a given sentence
-                for h in H:
-                    f_x_y = self.processor.generate_feature_vector(h)
-                    f_x_y_tags = self.processor.generate_expected_count_features(h)
-                    grad += self.calc_gradient(f_x_y, f_x_y_tags)
+                print("working on sentence ",idx)
+                for i, h in enumerate(H):
+                    print("working on history ", i)
+                    f = self.processor.generate_feature_vector(h)
+                    F = self.processor.generate_expected_count_features(h)
+                    if settings.use_vectorized_sparse:
+                        grad += self.vectorized_calc_gradient(f, F)
+                    else:
+                        grad += self.calc_gradient(f,F)
+
                 #   update v vector after a batch - a sentence
                 self.v += (self.lr * grad)

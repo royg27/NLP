@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import re
-
+from scipy.sparse import csr_matrix
+import settings
 
 class textProcessor:
     def __init__(self, path_file_name):
@@ -148,4 +149,7 @@ class textProcessor:
             possible_history = (t_2, t_1, possible_tag, word)
             expected_count_features.append(self.generate_feature_vector(possible_history))
         assert len(expected_count_features) == len(self.tags_set)
-        return expected_count_features
+        if settings.use_vectorized_sparse:
+            return csr_matrix(expected_count_features)
+        else:
+            return expected_count_features
