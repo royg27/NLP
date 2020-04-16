@@ -2,6 +2,8 @@ from textProcessor import textProcessor
 from model import MEMM
 import settings
 import time
+import numpy as np
+
 def check_text_processor_basic():
     #full of assert, should just finish running
     s = textProcessor('data/train1.wtag')
@@ -20,9 +22,17 @@ def main():
     s = textProcessor('data/train1.wtag')
     s.preprocess()
     model = MEMM(s)
+    init_v = np.copy(model.v)
+
     start = time.time()
     model.fit(1)
     end = time.time()
+
+    trained_v = model.v
+    comparison = init_v != trained_v
+    print(comparison)
+    are_different = comparison.all()
+    assert are_different
     print("non-vectorized 1 sentence: ",end - start)
 
     return

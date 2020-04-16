@@ -72,7 +72,7 @@ class MEMM:
         for epoch in range(num_epochs):
             grad = np.zeros(self.processor.f_length)
             # run over sentences
-            for idx,H in enumerate(self.processor.histories):
+            for idx,H in enumerate(self.processor.histories[0:1]):
                 # run over histories of a given sentence
                 print("working on sentence ",idx)
                 for i, h in enumerate(H):
@@ -80,11 +80,15 @@ class MEMM:
                     f = self.processor.generate_feature_vector(h)
                     F = self.processor.generate_expected_count_features(h)
                     if settings.use_vectorized_sparse:
-                        grad += self.vectorized_calc_gradient(f, F)
+                        cur_grad = self.vectorized_calc_gradient(f, F)
+                        assert np.count_nonzero(cur_grad) != 0
+                        grad += cur_grad
                     else:
                         grad += self.calc_gradient(f,F)
 
                 #   update v vector after a batch - a sentence
+                delta_v = (self.lr * grad)
+                assert np.count_nonzero(delta_v) != 0
                 self.v += (self.lr * grad)
         # load weights to csv files
         savetxt('weights.csv',self.v, delimiter=',')
