@@ -1,6 +1,7 @@
 import numpy as np
 from textProcessor import textProcessor
 import settings
+from numpy import savetxt
 
 class MEMM:
     def __init__(self, textProcessor : textProcessor, lamda = 0.01, lr = 0.01, sigma = 0.001):
@@ -85,3 +86,5 @@ class MEMM:
 
                 #   update v vector after a batch - a sentence
                 self.v += (self.lr * grad)
+        # load weights to csv files
+        savetxt('weights.csv',self.v, delimiter=',')
