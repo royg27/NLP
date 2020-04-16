@@ -28,7 +28,7 @@ class textProcessor:
         # Split all the sentences and all the words and tags
         for line in self.lines:
             temp = re.split(' |\n', line)
-            temp = temp[0:-1]
+            del temp[-1]
             split_sentence = []
             split_tags = []
             for str in temp:
