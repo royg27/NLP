@@ -7,16 +7,29 @@ import numpy as np
 def check_text_processor_basic():
     #full of assert, should just finish running
     s = textProcessor('data/train1.wtag')
+    start = time.time()
     s.preprocess()
+    end = time.time()
+    print("preprocess took ", end - start)
     H = s.histories
-    h = H[0][0]
-    f = s.generate_feature_vector(h)
-    fs = s.generate_expected_count_features(h)
-    print(f.shape)
-    print(fs.dot(f))
+    H_tag = s.generate_H_tag()
+    print(len(H))
+    print(len(H_tag))
+    h = H[0]
+    start = time.time()
+    print(s.generate_F(H))
+    end = time.time()
+    print("calc_F took ", end - start)
+    start = time.time()
+    print(s.generate_F(H_tag))
+    end = time.time()
+    print("calc_F' took ", end - start)
+
+
 
 def main():
-    #check_text_processor_basic()
+    check_text_processor_basic()
+    return
     #settings.dont_use_vectorized() 3 vectorized is 3.5 times faster!
     settings.use_vectorized()
     s = textProcessor('data/train1.wtag')
