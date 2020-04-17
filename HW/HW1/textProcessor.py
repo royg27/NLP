@@ -72,11 +72,11 @@ class textProcessor:
         self.calc_features_count()
         #   calculate feature counts
         self.fill_feature_100_dictionary()
-        self.fill_feature_101_dictionary()
-        self.fill_feature_102_dictionary()
-        self.fill_feature_103_dictionary()
-        self.fill_feature_104_dictionary()
-        self.fill_feature_105_dictionary()
+        self.fill_feature_101_dictionary(len(self.feature_100))
+        self.fill_feature_102_dictionary(len(self.feature_101))
+        self.fill_feature_103_dictionary(len(self.feature_102))
+        self.fill_feature_104_dictionary(len(self.feature_103))
+        self.fill_feature_105_dictionary(len(self.feature_104))
 
         self.f_length = len(self.feature_100) + len(self.feature_101) + len(self.feature_102) + len(self.feature_103) +\
                         len(self.feature_104) + len(self.feature_105)
@@ -169,8 +169,8 @@ class textProcessor:
                     self.feature_100[(word, tag)] = idx
                     idx += 1
 
-    def fill_feature_101_dictionary(self):
-        idx = 0
+    def fill_feature_101_dictionary(self, start_idx):
+        idx = start_idx
         for tag in self.tags_set:
             for suffix in self.suffix_set:
                 key = (suffix, tag)
@@ -178,8 +178,8 @@ class textProcessor:
                     self.feature_101[key] = idx
                     idx += 1
 
-    def fill_feature_102_dictionary(self):
-        idx = 0
+    def fill_feature_102_dictionary(self, start_idx):
+        idx = start_idx
         for tag in self.tags_set:
             for prefix in self.prefix_set:
                 key = (prefix, tag)
@@ -187,15 +187,8 @@ class textProcessor:
                     self.feature_102[key] = idx
                     idx += 1
 
-    def fill_feature_105_dictionary(self):
-        idx = 0
-        for tag in self.tags_set:
-            if tag in self.feature_105_counts and self.feature_105_counts[tag] >= self.thr:
-                self.feature_105[tag] = idx
-                idx += 1
-
-    def fill_feature_103_dictionary(self):
-        idx = 0
+    def fill_feature_103_dictionary(self, start_idx):
+        idx = start_idx
         for first_tag in self.tags_set:
             for sec_tag in self.tags_set:
                 for thrd_tag in self.tags_set:
@@ -204,8 +197,8 @@ class textProcessor:
                         self.feature_103[key] = idx
                         idx += 1
 
-    def fill_feature_104_dictionary(self):
-        idx = 0
+    def fill_feature_104_dictionary(self, start_idx):
+        idx = start_idx
         for first_tag in self.tags_set:
             for sec_tag in self.tags_set:
                 key = (first_tag, sec_tag)
@@ -213,9 +206,15 @@ class textProcessor:
                     self.feature_104[key] = idx
                     idx += 1
 
+    def fill_feature_105_dictionary(self, start_idx):
+        idx = start_idx
+        for tag in self.tags_set:
+            if tag in self.feature_105_counts and self.feature_105_counts[tag] >= self.thr:
+                self.feature_105[tag] = idx
+                idx += 1
+
     def generate_F(self, H):
         """
-
         :param H: histories dataset
         :return: F which is all feature vectors as a sparse matrix
         """
@@ -228,7 +227,7 @@ class textProcessor:
                 row_inds.append(idx)
                 col_inds.append(p)
                 data.append(1)
-        return csr_matrix((data, (row_inds, col_inds)))
+        return csr_matrix((data, (row_inds, col_inds)), shape=(len(H),self.f_length))
 
     def generate_H_tag(self):
         H_tag = []
@@ -257,15 +256,11 @@ class textProcessor:
         word = history[3]
 
         hot_places = []
-
         #   f100    (word,tag)
-        f100 = np.zeros(len(self.feature_100))
         if (word, tag) in self.feature_100:
             hot_places.append(self.feature_100[(word, tag)])
-            f100[self.feature_100[(word, tag)]] = 1
 
         #   f101    (suffix,tag)
-        f101 = np.zeros(len(self.feature_101))
         suffixes_tag = []
         suffixes_tag.append((word[-1:], tag))
         if len(word) >= 2:
@@ -277,10 +272,8 @@ class textProcessor:
         for suf_tag in suffixes_tag:
             if suf_tag in self.feature_101:
                 hot_places.append(self.feature_101[suf_tag])
-                f101[self.feature_101[suf_tag]] = 1
 
         #   f102    (prefix,tag)
-        f102 = np.zeros(len(self.feature_102))
         prefixes_tag = []
         prefixes_tag.append((word[:1], tag))
         if len(word) >= 2:
@@ -292,87 +285,78 @@ class textProcessor:
         for pre_tag in prefixes_tag:
             if pre_tag in self.feature_102:
                 hot_places.append(self.feature_102[pre_tag])
-                f102[self.feature_102[pre_tag]] = 1
 
         #   f103    (tag,tag,tag)
-        f103 = np.zeros(len(self.feature_103))
         if (t_2,t_1,tag) in self.feature_103:
             hot_places.append(self.feature_103[(t_2,t_1,tag)])
-            f103[self.feature_103[(t_2,t_1,tag)]] = 1
 
         #   f104    (tag,tag)
-        f104 = np.zeros(len(self.feature_104))
         if (t_1,tag) in self.feature_104:
             hot_places.append(self.feature_104[(t_1,tag)])
-            f104[self.feature_104[(t_1,tag)]] = 1
 
         #   f105    (tag)
-        f105 = np.zeros(len(self.feature_105))
         if tag in self.feature_105:
             hot_places.append(self.feature_105[tag])
-            f105[self.feature_105[tag]] = 1
 
-        final_feature_vector = np.concatenate((f100, f101, f102, f103, f104, f105))
-        #return final_feature_vector
         return hot_places
 
     # TODO if generate_feature_vector works delete it
-    def generate_feature_vector2(self, history):
-        # history = (t-2,t-1,t,w)
-        t_2 = history[0]
-        t_1 = history[1]
-        tag = history[2]
-        word = history[3]
-
-        # f100
-        f100_idx = self.feature_100[(word, tag)]
-        f100 = np.zeros(len(self.feature_100))
-        f100[f100_idx] = 1
-
-        # f101
-        f101_idx = self.feature_101[tag]
-        f101 = np.zeros(len(self.feature_101))
-        if word[-3:] == "ing":
-            f101[f101_idx] = 1
-
-        # f102
-        f102_idx = self.feature_102[tag]
-        f102 = np.zeros(len(self.feature_102))
-        if word[:3] == "pre":
-            f102[f102_idx] = 1
-
-        # f103
-        f103_idx = self.feature_103[(t_2,t_1,tag)]
-        f103 = np.zeros(len(self.feature_103))
-        f103[f103_idx] = 1
-
-        # f104
-        f104_idx = self.feature_104[(t_1,tag)]
-        f104 = np.zeros(len(self.feature_104))
-        f104[f104_idx] = 1
-
-        # f105
-        f105_idx = self.feature_105[tag]
-        f105 = np.zeros(len(self.feature_105))
-        f105[f105_idx] = 1
-
-        final_feature_vector = np.concatenate((f100, f101, f102, f103, f104, f105))
-        return final_feature_vector
-
-
-    def generate_expected_count_features(self, history):
-        # history = (t-2,t-1,t,w)
-        t_2 = history[0]
-        t_1 = history[1]
-        tag = history[2]
-        word = history[3]
-
-        expected_count_features = []
-        for possible_tag in self.tags_set:
-            possible_history = (t_2, t_1, possible_tag, word)
-            expected_count_features.append(self.generate_feature_vector(possible_history))
-        assert len(expected_count_features) == len(self.tags_set)
-        if settings.use_vectorized_sparse:
-            return csr_matrix(expected_count_features)
-        else:
-            return expected_count_features
+    # def generate_feature_vector2(self, history):
+    #     # history = (t-2,t-1,t,w)
+    #     t_2 = history[0]
+    #     t_1 = history[1]
+    #     tag = history[2]
+    #     word = history[3]
+    #
+    #     # f100
+    #     f100_idx = self.feature_100[(word, tag)]
+    #     f100 = np.zeros(len(self.feature_100))
+    #     f100[f100_idx] = 1
+    #
+    #     # f101
+    #     f101_idx = self.feature_101[tag]
+    #     f101 = np.zeros(len(self.feature_101))
+    #     if word[-3:] == "ing":
+    #         f101[f101_idx] = 1
+    #
+    #     # f102
+    #     f102_idx = self.feature_102[tag]
+    #     f102 = np.zeros(len(self.feature_102))
+    #     if word[:3] == "pre":
+    #         f102[f102_idx] = 1
+    #
+    #     # f103
+    #     f103_idx = self.feature_103[(t_2,t_1,tag)]
+    #     f103 = np.zeros(len(self.feature_103))
+    #     f103[f103_idx] = 1
+    #
+    #     # f104
+    #     f104_idx = self.feature_104[(t_1,tag)]
+    #     f104 = np.zeros(len(self.feature_104))
+    #     f104[f104_idx] = 1
+    #
+    #     # f105
+    #     f105_idx = self.feature_105[tag]
+    #     f105 = np.zeros(len(self.feature_105))
+    #     f105[f105_idx] = 1
+    #
+    #     final_feature_vector = np.concatenate((f100, f101, f102, f103, f104, f105))
+    #     return final_feature_vector
+    #
+    #
+    # def generate_expected_count_features(self, history):
+    #     # history = (t-2,t-1,t,w)
+    #     t_2 = history[0]
+    #     t_1 = history[1]
+    #     tag = history[2]
+    #     word = history[3]
+    #
+    #     expected_count_features = []
+    #     for possible_tag in self.tags_set:
+    #         possible_history = (t_2, t_1, possible_tag, word)
+    #         expected_count_features.append(self.generate_feature_vector(possible_history))
+    #     assert len(expected_count_features) == len(self.tags_set)
+    #     if settings.use_vectorized_sparse:
+    #         return csr_matrix(expected_count_features)
+    #     else:
+    #         return expected_count_features

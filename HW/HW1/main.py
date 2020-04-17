@@ -10,14 +10,23 @@ def check_text_processor_basic():
     start = time.time()
     s.preprocess()
     end = time.time()
+    print("analyzing dictionaries")
+    print(s.feature_100)
+    print(s.feature_101)
+    print(s.feature_102)
+    print(s.feature_103)
+    print(s.feature_104)
+    print(s.feature_105)
     print("preprocess took ", end - start)
     H = s.histories
+    h = H[0]
     H_tag = s.generate_H_tag()
     print(len(H))
     print(len(H_tag))
     h = H[0]
     start = time.time()
-    print(s.generate_F(H))
+    F=s.generate_F(H)
+    print(F.shape)
     end = time.time()
     print("calc_F took ", end - start)
     start = time.time()
@@ -25,11 +34,9 @@ def check_text_processor_basic():
     end = time.time()
     print("calc_F' took ", end - start)
 
-
-
 def main():
-    check_text_processor_basic()
-    return
+    # check_text_processor_basic()
+    # return
     #settings.dont_use_vectorized() 3 vectorized is 3.5 times faster!
     settings.use_vectorized()
     s = textProcessor('data/train1.wtag')
@@ -38,8 +45,9 @@ def main():
     init_v = np.copy(model.v)
 
     start = time.time()
-    model.fit(1)
+    model.fit2()
     end = time.time()
+    return
 
     trained_v = model.v
     comparison = init_v != trained_v
