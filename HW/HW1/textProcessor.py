@@ -33,7 +33,8 @@ class textProcessor:
         self.prefix_set = set()
         self.suffix_set = set()
         self.words_set = set()
-        self.tags_set = set('*')
+        self.tags_set_t = set('*')
+        self.tags_set = []
         # length of feature vector
         self.f_length = -1
 
@@ -64,8 +65,11 @@ class textProcessor:
                 curr_history = (t_2, t_1, t, word)
                 self.histories.append(curr_history)
                 self.words_set.add(word)
-                self.tags_set.add(t)
+                self.tags_set_t.add(t)
         #   calculate all possible prefixes and suffixes according to the training set
+        tag_list = list(self.tags_set_t)
+        self.tags_set = np.array(tag_list)
+        self.tags_set = np.sort(self.tags_set)
         self.create_prefix_set()
         self.create_suffix_set()
         #   create statistics
