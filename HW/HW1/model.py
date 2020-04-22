@@ -144,7 +144,9 @@ class MEMM:
                     #   q is for all possible v for given t,u
                     val = q * pi[idx,t_idx,u_idx]
                     indexes_to_update = v<val
+                    #   update v according to its maximal value, if the current t increased on of its values
                     v[indexes_to_update] = val[indexes_to_update]
+                    #   update the the t caused the updates
                     t_bp[indexes_to_update] = t_idx
                 pi[idx+1,u_idx,:] = v
                 bp[idx+1,u_idx,:] = t_bp
