@@ -5,8 +5,10 @@ from scipy.sparse import csr_matrix
 import settings
 from collections import OrderedDict
 
+
 class textProcessor:
     def __init__(self, path_file_name, thr=3):
+        #np.random.seed(13)
         self.thr = thr
         self.file = open(path_file_name,'r')
         self.lines = self.file.readlines()
@@ -32,7 +34,10 @@ class textProcessor:
 
         self.prefix_set = set()
         self.suffix_set = set()
-        self.words_set = set()
+        self.suffix_arr = []
+        self.prefix_arr = []
+        self.words_set_t = set()
+        self.words_set = []
         self.tags_set_t = set('*')
         self.tags_set = []
         # length of feature vector
@@ -64,12 +69,16 @@ class textProcessor:
                 t_2 = self.tags[sentence_idx][word_idx-2] if word_idx > 1 else '*'
                 curr_history = (t_2, t_1, t, word)
                 self.histories.append(curr_history)
-                self.words_set.add(word)
+                self.words_set_t.add(word)
                 self.tags_set_t.add(t)
         #   calculate all possible prefixes and suffixes according to the training set
         tag_list = list(self.tags_set_t)
         self.tags_set = np.array(tag_list)
         self.tags_set = np.sort(self.tags_set)
+        word_list = list(self.words_set_t)
+        self.words_set = np.array(word_list)
+        self.words_set = np.sort(self.words_set)
+
         self.create_prefix_set()
         self.create_suffix_set()
         #   create statistics
@@ -94,6 +103,9 @@ class textProcessor:
                     self.suffix_set.add(word[-3:])
                     if len(word) >= 4:
                         self.suffix_set.add(word[-4:])
+        self.suffix_arr = list(self.suffix_set)
+        self.suffix_arr = np.array(self.suffix_arr)
+        self.suffix_arr = np.sort(self.suffix_arr)
 
     def create_prefix_set(self):
         for word in self.words_set:
@@ -104,6 +116,9 @@ class textProcessor:
                     self.prefix_set.add(word[:3])
                     if len(word) >= 4:
                         self.prefix_set.add(word[:4])
+        self.prefix_arr = list(self.prefix_set)
+        self.prefix_arr = np.array(self.prefix_arr)
+        self.prefix_arr = np.sort(self.prefix_arr)
 
     def calc_features_count(self):
         for h in self.histories:
@@ -176,7 +191,7 @@ class textProcessor:
     def fill_feature_101_dictionary(self, start_idx):
         idx = start_idx
         for tag in self.tags_set:
-            for suffix in self.suffix_set:
+            for suffix in self.suffix_arr:
                 key = (suffix, tag)
                 if key in self.feature_101_counts and self.feature_101_counts[key] >= self.thr:
                     self.feature_101[key] = idx
@@ -185,7 +200,7 @@ class textProcessor:
     def fill_feature_102_dictionary(self, start_idx):
         idx = start_idx
         for tag in self.tags_set:
-            for prefix in self.prefix_set:
+            for prefix in self.prefix_arr:
                 key = (prefix, tag)
                 if key in self.feature_102_counts and self.feature_102_counts[key] >= self.thr:
                     self.feature_102[key] = idx
@@ -248,7 +263,6 @@ class textProcessor:
 
     def generate_feature_vector(self, history):
         """
-
         :param history: one history sample
         :return: the history's feature vector
         """
@@ -303,6 +317,22 @@ class textProcessor:
             hot_places.append(self.feature_105[tag])
 
         return hot_places
+
+    def generate_h_tag_for_word(self, word,t_1,t):
+        h_tag = []
+        # history = (t-2,t-1,t,w)
+        for t_2 in self.tags_set:
+            history = (t_2, t_1, t, word)
+            h_tag.append(history)
+        return h_tag
+
+    def generate_h_tag_for_word_roy(self, word,t_2,t_1):
+        h_tag = []
+        # history = (t-2,t-1,t,w)
+        for t in self.tags_set:
+            history = (t_2, t_1, t, word)
+            h_tag.append(history)
+        return h_tag
 
     # TODO if generate_feature_vector works delete it
     # def generate_feature_vector2(self, history):

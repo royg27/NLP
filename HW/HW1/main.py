@@ -16,19 +16,23 @@ def train_model(s : textProcessor):
     init_v = np.copy(model.v)
 
     start = time.time()
-    model.fit()
+    model.fit(False)
     end = time.time()
+    print("training time = ",end-start)
     return model
 
-
 def main():
-
     # train processor
-    s = train_processor()
+    # s = train_processor()
     # train model
-    model = train_model(s)
+    # model = train_model(s)
     # unit_tests.check_text_processor_basic()
-    unit_tests.test_model(100)
+    # unit_tests.test_model(1)
+    s = textProcessor('data/train1.wtag')
+    s.preprocess()
+    model = MEMM(s)
+    model.fit(True)
+    model.viterbi_roy()
     return
 
 
