@@ -32,7 +32,7 @@ def main():
     s.preprocess()
     model = MEMM(s)
     model.fit(True)
-    model.viterbi_roy()
+    model.predict('data/train1.wtag')
     return
 
 

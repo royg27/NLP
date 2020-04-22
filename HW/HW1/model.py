@@ -98,20 +98,28 @@ class MEMM:
         savetxt('weights.csv', self.v, delimiter=',')
         print("v = ",self.v)
 
-    # def predict(self,file_path):
-        # s = textProcessor(file_path)
-        # s.preprocess()
-        # H = s.histories
-        # H_tag = s.generate_H_tag()
-        # F = s.generate_feature_vector()
-        # F_tag = s.generate_feature_vector(H_tag)
-        # for sentence in sentences:
-        #     viterbi(sentence)
-
+    def predict(self,file_path,verbose=False,num_sentences=10):
+        s = textProcessor(file_path)
+        s.preprocess()
+        av_acc = 0
+        for idx, sentence in enumerate(s.sentences):
+            y_pred = self.viterbi_roy(sentence)
+            pred = np.array(y_pred)
+            if(verbose):
+                print(sentence)
+                print("Ground truth:")
+                print(self.processor.tags[idx])
+                print("predicted:")
+                print(pred)
+            ground_truth = np.array(self.processor.tags[idx])
+            acc = (pred == ground_truth).sum() / ground_truth.shape[0]
+            print("acc iter ",idx," = ", acc)
+            av_acc += acc
+            if(idx==num_sentences-1):
+                print("total acc = ",float(av_acc)/num_sentences)
+                return
 
     def viterbi_roy(self, sentence=['The','Treasury','is', 'still','working','out'], beam=3):
-        sample = 5
-        sentence = self.processor.sentences[sample]
         pi = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         bp = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         #   init pi(0),bp(0
@@ -173,14 +181,8 @@ class MEMM:
         ret_val = []
         for t in tags:
             ret_val.append(tags_list[int(t)])
-        print(sentence)
-        print("Ground truth:")
-        print(self.processor.tags[sample])
-        print("predicted:")
-        print(ret_val[1:])
-        pred = np.array(ret_val[1:])
-        grount_truth = np.array(self.processor.tags[sample])
-        print("acc = ", (pred == grount_truth).sum()/grount_truth.shape[0])
+        return ret_val[1:]
+
 
 
 
