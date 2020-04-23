@@ -86,6 +86,7 @@ class MEMM:
         if load_weights:
             self.v = loadtxt('weights.csv')
             return
+        print("training")
         H = self.processor.histories
         H_tag = self.processor.generate_H_tag()
         F = self.processor.generate_F(H)
@@ -93,19 +94,22 @@ class MEMM:
         empirical_counts = F.sum(axis=0)
         args = (empirical_counts, F_tag, F, len(self.processor.tags_set))
         w_0 = np.zeros(self.processor.f_length, dtype=np.float64)
-        optimal_params=fmin_l_bfgs_b(func=self.calc_objective_per_iter, x0=w_0, args=args, maxiter=1000, iprint=10)
+        optimal_params=fmin_l_bfgs_b(func=self.calc_objective_per_iter, x0=w_0, args=args, maxiter=1000, iprint=0)
         self.v = optimal_params[0]
         savetxt('weights.csv', self.v, delimiter=',')
-        print("v = ",self.v)
 
-    def predict(self,file_path,verbose=False,num_sentences=100,beam=3):
+    def predict(self,file_path,verbose=False,beam=3, num_sentences=-1):
         s = textProcessor(file_path)
         s.preprocess()
+        if num_sentences==-1:
+            num_sentences = len(s.sentences)
         av_acc = 0
         for idx, sentence in enumerate(s.sentences):
+            if idx >= num_sentences:
+                break
             y_pred = self.viterbi_roy(sentence, beam=beam)
             pred = np.array(y_pred)
-            if(verbose):
+            if verbose:
                 print(sentence)
                 print("Ground truth:")
                 print(s.tags[idx])
@@ -113,11 +117,11 @@ class MEMM:
                 print(pred)
             ground_truth = np.array(s.tags[idx])
             acc = (pred == ground_truth).sum() / ground_truth.shape[0]
-            print("acc iter ",idx," = ", acc)
+            if verbose:
+                print("acc iter ",idx," = ", acc)
             av_acc += acc
-            if(idx==num_sentences-1):
-                print("total acc = ",float(av_acc)/num_sentences)
-                return
+        print("total acc = ",float(av_acc)/num_sentences)
+        return float(av_acc)/num_sentences
 
     def viterbi_roy(self, sentence=['In','other','words', ',','it','was'],beam=3):
         pi = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
