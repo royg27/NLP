@@ -98,20 +98,20 @@ class MEMM:
         savetxt('weights.csv', self.v, delimiter=',')
         print("v = ",self.v)
 
-    def predict(self,file_path,verbose=False,num_sentences=10):
+    def predict(self,file_path,verbose=False,num_sentences=100,beam=3):
         s = textProcessor(file_path)
         s.preprocess()
         av_acc = 0
         for idx, sentence in enumerate(s.sentences):
-            y_pred = self.viterbi_roy(sentence)
+            y_pred = self.viterbi_roy(sentence, beam=beam)
             pred = np.array(y_pred)
             if(verbose):
                 print(sentence)
                 print("Ground truth:")
-                print(self.processor.tags[idx])
+                print(s.tags[idx])
                 print("predicted:")
                 print(pred)
-            ground_truth = np.array(self.processor.tags[idx])
+            ground_truth = np.array(s.tags[idx])
             acc = (pred == ground_truth).sum() / ground_truth.shape[0]
             print("acc iter ",idx," = ", acc)
             av_acc += acc
@@ -119,7 +119,7 @@ class MEMM:
                 print("total acc = ",float(av_acc)/num_sentences)
                 return
 
-    def viterbi_roy(self, sentence=['The','Treasury','is', 'still','working','out'], beam=3):
+    def viterbi_roy(self, sentence=['In','other','words', ',','it','was'],beam=3):
         pi = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         bp = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         #   init pi(0),bp(0
@@ -131,8 +131,6 @@ class MEMM:
         tags_list = self.processor.tags_set
         relevant_idx_u = []
         relevant_tags_u = []
-        relevant_idx_t = []
-        relevant_tags_t = []
         for idx, word in enumerate(sentence):
             if idx==0:
                 relevant_idx_u = [star_idx]

@@ -32,7 +32,8 @@ def main():
     s.preprocess()
     model = MEMM(s)
     model.fit(True)
-    model.predict('data/train1.wtag')
+    model.predict('data/train2.wtag',verbose=False, num_sentences=100,beam=3)
+    #print("tagged ", model.viterbi_roy(sentence=['About','400,000','commuters','trying']))
     return
 
 
