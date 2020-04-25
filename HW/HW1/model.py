@@ -37,9 +37,13 @@ class MEMM:
         :return: probability for every f'
         """
         F_V = F.dot(w_i)
-        e_f_v = np.exp(F_V)
+        # trick for numerical stability
         # reshape in such a way that every row contains values per one history in train set
-        reshaped_e_f_v = e_f_v.reshape((-1, h_tag_len))
+        F_V_reshaped = F_V.reshape((-1, h_tag_len))
+        F_V_max = F_V_reshaped.max(axis=1)
+        F_V_reshaped -= F_V_max[:,np.newaxis]
+        reshaped_e_f_v = np.exp(F_V_reshaped)
+        # reshaped_e_f_v = e_f_v.reshape((-1, h_tag_len))
         row_sum = reshaped_e_f_v.sum(axis=1)[:,np.newaxis]
         soft_max_matrix = reshaped_e_f_v / row_sum
         # now, each cell corresponds to one f' and its value is its probability
