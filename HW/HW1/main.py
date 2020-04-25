@@ -48,14 +48,14 @@ def main():
     # s = train_processor()
     # train model
     # model = train_model(s)
-    # unit_tests.check_text_processor_basic()
+    unit_tests.check_text_processor_basic()
     # unit_tests.test_model(1)
     # # predict
-    s = textProcessor('data/train1.wtag',thr=5)
-    s.preprocess()
-    model = MEMM(s,lamda=0.1)
-    model.fit(False)
-    model.predict('data/train2.wtag',verbose=False, num_sentences=100,beam=3)
+    # s = textProcessor('data/train1.wtag',thr=5)
+    # s.preprocess()
+    # model = MEMM(s,lamda=0.1)
+    # model.fit(False)
+    # model.predict('data/train2.wtag',verbose=False, num_sentences=100,beam=3)
     ## hyperparameter search
     # hyperparameter_tuning()
     return

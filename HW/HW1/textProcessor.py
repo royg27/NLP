@@ -84,12 +84,12 @@ class textProcessor:
         #   create statistics
         self.calc_features_count()
         #   calculate feature counts
-        self.fill_feature_100_dictionary()
-        self.fill_feature_101_dictionary(len(self.feature_100))
-        self.fill_feature_102_dictionary(len(self.feature_101))
-        self.fill_feature_103_dictionary(len(self.feature_102))
-        self.fill_feature_104_dictionary(len(self.feature_103))
-        self.fill_feature_105_dictionary(len(self.feature_104))
+        finish_idx = self.fill_feature_100_dictionary()
+        finish_idx = self.fill_feature_101_dictionary(finish_idx)
+        finish_idx = self.fill_feature_102_dictionary(finish_idx)
+        finish_idx = self.fill_feature_103_dictionary(finish_idx)
+        finish_idx = self.fill_feature_104_dictionary(finish_idx)
+        self.fill_feature_105_dictionary(finish_idx)
 
         self.f_length = len(self.feature_100) + len(self.feature_101) + len(self.feature_102) + len(self.feature_103) +\
                         len(self.feature_104) + len(self.feature_105)
@@ -187,6 +187,7 @@ class textProcessor:
                 if (word, tag) in self.feature_100_counts and self.feature_100_counts[(word, tag)] >= self.thr:
                     self.feature_100[(word, tag)] = idx
                     idx += 1
+        return idx
 
     def fill_feature_101_dictionary(self, start_idx):
         idx = start_idx
@@ -196,6 +197,7 @@ class textProcessor:
                 if key in self.feature_101_counts and self.feature_101_counts[key] >= self.thr:
                     self.feature_101[key] = idx
                     idx += 1
+        return idx
 
     def fill_feature_102_dictionary(self, start_idx):
         idx = start_idx
@@ -205,6 +207,8 @@ class textProcessor:
                 if key in self.feature_102_counts and self.feature_102_counts[key] >= self.thr:
                     self.feature_102[key] = idx
                     idx += 1
+        return idx
+
 
     def fill_feature_103_dictionary(self, start_idx):
         idx = start_idx
@@ -215,6 +219,7 @@ class textProcessor:
                     if key in self.feature_103_counts and self.feature_103_counts[key] >= self.thr:
                         self.feature_103[key] = idx
                         idx += 1
+        return idx
 
     def fill_feature_104_dictionary(self, start_idx):
         idx = start_idx
@@ -224,6 +229,7 @@ class textProcessor:
                 if key in self.feature_104_counts and self.feature_104_counts[key] >= self.thr:
                     self.feature_104[key] = idx
                     idx += 1
+        return idx
 
     def fill_feature_105_dictionary(self, start_idx):
         idx = start_idx
@@ -231,6 +237,7 @@ class textProcessor:
             if tag in self.feature_105_counts and self.feature_105_counts[tag] >= self.thr:
                 self.feature_105[tag] = idx
                 idx += 1
+        return idx
 
     def generate_F(self, H):
         """

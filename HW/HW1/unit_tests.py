@@ -12,12 +12,17 @@ def check_text_processor_basic():
     s.preprocess()
     end = time.time()
     print("analyzing dictionaries")
-    print(s.feature_100)
-    print(s.feature_101)
-    print(s.feature_102)
-    print(s.feature_103)
-    print(s.feature_104)
-    print(s.feature_105)
+    f100 = s.feature_100
+    f101 = s.feature_101
+    f102 = s.feature_102
+    f103 = s.feature_103
+    f104 = s.feature_104
+    f105 = s.feature_105
+    assert np.all(f100.values() != f101.values())
+    assert np.all(f102.values() != f103.values())
+    assert np.all(f104.values() != f104.values())
+    assert np.all(f104.values() != f105.values())
+    print("analyzing dictionaries - Done")
     print("preprocess took ", end - start)
     H = s.histories
     h = H[0]
