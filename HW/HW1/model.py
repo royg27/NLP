@@ -90,7 +90,6 @@ class MEMM:
         if load_weights:
             self.v = loadtxt('weights.csv')
             return
-        print("training")
         H = self.processor.histories
         H_tag = self.processor.generate_H_tag()
         F = self.processor.generate_F(H)
@@ -103,7 +102,7 @@ class MEMM:
         savetxt('weights.csv', self.v, delimiter=',')
 
     def predict(self,file_path,verbose=False,beam=3, num_sentences=-1):
-        s = textProcessor(file_path)
+        s = textProcessor([file_path])
         s.preprocess()
         if num_sentences==-1:
             num_sentences = len(s.sentences)
@@ -140,6 +139,7 @@ class MEMM:
         relevant_idx_u = []
         relevant_tags_u = []
         for idx, word in enumerate(sentence):
+            prev_word = sentence[idx-1] if idx>0 else '*'
             if idx==0:
                 relevant_idx_u = [star_idx]
                 relevant_tags_u = ['*']
@@ -152,7 +152,7 @@ class MEMM:
                 v = -np.inf * np.ones(len(tags_list))
                 t_bp = np.zeros(len(tags_list))
                 for t_idx, t in zip(relevant_idx_t, relevant_tags_t):
-                    h_tag = self.processor.generate_h_tag_for_word_roy(word,t,u)
+                    h_tag = self.processor.generate_h_tag_for_word_roy(word, t, u, prev_word)
                     F_tag = self.processor.generate_F(h_tag)
                     q = self.vectorized_softmax(F_tag, self.v, len(tags_list))
                     #   q is for all possible v for given t,u
@@ -194,40 +194,40 @@ class MEMM:
 
 
 
-    def viterbi(self, sentence=['The','Treasury','is', 'still'], beam=3):
-        pi = np.zeros((len(sentence)+1, len(self.processor.tags_set), len(self.processor.tags_set)))
-        #   init pi(0)
-        star_idx = np.where(self.processor.tags_set == '*')[0][0]
-        pi[0,star_idx,star_idx] = 1
-        relevant_idx = []
-        relevant_tags = []
-        for idx, word in enumerate(sentence):
-            #   create all possible histories
-            if idx==0:
-                relevant_idx = [star_idx]
-                relevant_tags = ['*']
-            for row,u in zip(relevant_idx, relevant_tags):    # when implementing beam, run only on top k
-                # u is the t_1, last tag
-                for col,v in enumerate(self.processor.tags_set):
-                    # v is the current tag
-                    h_tag = self.processor.generate_h_tag_for_word(word,u,v)
-                    F_tag = self.processor.generate_F(h_tag)
-                    q = self.vectorized_softmax(F_tag, self.v, len(self.processor.tags_set))
-                    pi_v = pi[idx, :, row]
-                    val = np.multiply(q, pi_v)
-                    pi[idx + 1, row, col] = np.max(val)
-            #   beam search
-            relevant_idx = np.argsort(pi[idx + 1, row, :])[-beam:]
-            relevant_tags = self.processor.tags_set[relevant_idx]
-            print(pi[idx+1,:,:])
-
-                    # max_val = -1 * np.inf
-                    # for t_idx, tag in enumerate(self.processor.tags_set):
-                    #     val = pi[idx, t_idx, u] * q[t_idx]
-                    #     if val > max_val:
-                    #         max_val = val
-                    # pi[idx+1,row,col] = max_val
-        return
+    # def viterbi(self, sentence=['The','Treasury','is', 'still'], beam=3):
+    #     pi = np.zeros((len(sentence)+1, len(self.processor.tags_set), len(self.processor.tags_set)))
+    #     #   init pi(0)
+    #     star_idx = np.where(self.processor.tags_set == '*')[0][0]
+    #     pi[0,star_idx,star_idx] = 1
+    #     relevant_idx = []
+    #     relevant_tags = []
+    #     for idx, word in enumerate(sentence):
+    #         #   create all possible histories
+    #         if idx==0:
+    #             relevant_idx = [star_idx]
+    #             relevant_tags = ['*']
+    #         for row,u in zip(relevant_idx, relevant_tags):    # when implementing beam, run only on top k
+    #             # u is the t_1, last tag
+    #             for col,v in enumerate(self.processor.tags_set):
+    #                 # v is the current tag
+    #                 h_tag = self.processor.generate_h_tag_for_word(word,u,v)
+    #                 F_tag = self.processor.generate_F(h_tag)
+    #                 q = self.vectorized_softmax(F_tag, self.v, len(self.processor.tags_set))
+    #                 pi_v = pi[idx, :, row]
+    #                 val = np.multiply(q, pi_v)
+    #                 pi[idx + 1, row, col] = np.max(val)
+    #         #   beam search
+    #         relevant_idx = np.argsort(pi[idx + 1, row, :])[-beam:]
+    #         relevant_tags = self.processor.tags_set[relevant_idx]
+    #         print(pi[idx+1,:,:])
+    #
+    #                 # max_val = -1 * np.inf
+    #                 # for t_idx, tag in enumerate(self.processor.tags_set):
+    #                 #     val = pi[idx, t_idx, u] * q[t_idx]
+    #                 #     if val > max_val:
+    #                 #         max_val = val
+    #                 # pi[idx+1,row,col] = max_val
+    #     return
 
 
 

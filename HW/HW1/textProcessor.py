@@ -10,8 +10,10 @@ class textProcessor:
     def __init__(self, path_file_name, thr=3):
         #np.random.seed(13)
         self.thr = thr
-        self.file = open(path_file_name,'r')
-        self.lines = self.file.readlines()
+        self.lines = []
+        for file in path_file_name:
+            self.file = open(file, 'r')
+            self.lines = np.concatenate((self.lines, self.file.readlines()))
         self.sentences = []
         self.tags = []
         self.histories = []
@@ -31,7 +33,18 @@ class textProcessor:
         self.feature_103 = OrderedDict()
         self.feature_104 = OrderedDict()
         self.feature_105 = OrderedDict()
+        #   additional features
+        self.num_additional = 3
+        self.feature_start_cap_counts = OrderedDict()
+        self.feature_all_caps_counts = OrderedDict()
+        self.feature_contains_numbers_counts = OrderedDict()
+        self.feature_106_counts = OrderedDict()
 
+        self.feature_start_cap = OrderedDict()
+        self.feature_all_caps = OrderedDict()
+        self.feature_contains_numbers = OrderedDict()
+        self.feature_106 = OrderedDict()
+        #
         self.prefix_set = set()
         self.suffix_set = set()
         self.suffix_arr = []
@@ -67,7 +80,8 @@ class textProcessor:
                 t = self.tags[sentence_idx][word_idx]
                 t_1 = self.tags[sentence_idx][word_idx-1] if word_idx > 0 else '*'
                 t_2 = self.tags[sentence_idx][word_idx-2] if word_idx > 1 else '*'
-                curr_history = (t_2, t_1, t, word)
+                prev_word = sentence[word_idx-1] if word_idx>0 else '*'
+                curr_history = (t_2, t_1, t, word, prev_word)
                 self.histories.append(curr_history)
                 self.words_set_t.add(word)
                 self.tags_set_t.add(t)
@@ -89,10 +103,14 @@ class textProcessor:
         finish_idx = self.fill_feature_102_dictionary(finish_idx)
         finish_idx = self.fill_feature_103_dictionary(finish_idx)
         finish_idx = self.fill_feature_104_dictionary(finish_idx)
-        self.fill_feature_105_dictionary(finish_idx)
-
-        self.f_length = len(self.feature_100) + len(self.feature_101) + len(self.feature_102) + len(self.feature_103) +\
-                        len(self.feature_104) + len(self.feature_105)
+        finish_idx = self.fill_feature_105_dictionary(finish_idx)
+        #   additional features
+        finish_idx = self.fill_feature_start_cap(finish_idx)
+        finish_idx = self.fill_feature_all_caps(finish_idx)
+        finish_idx = self.fill_feature_contains_numbers(finish_idx)
+        finish_idx = self.fill_feature_106_dictionary(finish_idx)
+        #   length of feature
+        self.f_length = finish_idx
 
     def create_suffix_set(self):
         for word in self.words_set:
@@ -122,11 +140,12 @@ class textProcessor:
 
     def calc_features_count(self):
         for h in self.histories:
-            # history = (t-2,t-1,t,w)
+            # history = (t-2,t-1,t,w,prev_word)
             t_2 = h[0]
             t_1 = h[1]
             tag = h[2]
             word = h[3]
+            prev_word = h[4]
             #   f100
             if (word,tag) in self.feature_100_counts:
                 self.feature_100_counts[(word, tag)] += 1
@@ -179,6 +198,26 @@ class textProcessor:
                 self.feature_105_counts[tag] += 1
             else:
                 self.feature_105_counts[tag] = 1
+            #   f106
+            if (prev_word, tag) in self.feature_106_counts:
+                self.feature_106_counts[(prev_word, tag)] += 1
+            else:
+                self.feature_106_counts[(prev_word, tag)] = 1
+            #   feature_start_cap_counts
+            if word[0].isupper() and tag in self.feature_start_cap_counts:
+                self.feature_start_cap_counts[tag] += 1
+            else:
+                self.feature_start_cap_counts[tag] = 1
+            #   feature_all_caps
+            if word.isupper() and tag in self.feature_all_caps_counts:
+                self.feature_all_caps_counts[tag] += 1
+            else:
+                self.feature_all_caps_counts[tag] = 1
+            #   feature_contains_numbers
+            if (not word.isalpha()) and tag in self.feature_contains_numbers_counts:
+                self.feature_contains_numbers_counts[tag] += 1
+            else:
+                self.feature_contains_numbers_counts[tag] = 1
 
     def fill_feature_100_dictionary(self):
         idx = 0
@@ -209,7 +248,6 @@ class textProcessor:
                     idx += 1
         return idx
 
-
     def fill_feature_103_dictionary(self, start_idx):
         idx = start_idx
         for first_tag in self.tags_set:
@@ -239,6 +277,39 @@ class textProcessor:
                 idx += 1
         return idx
 
+    def fill_feature_start_cap(self,start_idx):
+        idx = start_idx
+        for tag in self.tags_set:
+            if tag in self.feature_start_cap_counts and self.feature_start_cap_counts[tag] >= self.thr:
+                self.feature_start_cap[tag] = idx
+                idx += 1
+        return idx
+
+    def fill_feature_all_caps(self,start_idx):
+        idx = start_idx
+        for tag in self.tags_set:
+            if tag in self.feature_all_caps_counts and self.feature_all_caps_counts[tag] >= self.thr:
+                self.feature_all_caps[tag] = idx
+                idx += 1
+        return idx
+
+    def fill_feature_contains_numbers(self,start_idx):
+        idx = start_idx
+        for tag in self.tags_set:
+            if tag in self.feature_contains_numbers_counts and self.feature_contains_numbers_counts[tag] >= self.thr:
+                self.feature_contains_numbers[tag] = idx
+                idx += 1
+        return idx
+
+    def fill_feature_106_dictionary(self, start_idx):
+        idx = start_idx
+        for word in self.words_set:
+            for tag in self.tags_set:
+                if (word, tag) in self.feature_106_counts and self.feature_106_counts[(word, tag)] >= self.thr:
+                    self.feature_106[(word, tag)] = idx
+                    idx += 1
+        return idx
+
     def generate_F(self, H):
         """
         :param H: histories dataset
@@ -263,8 +334,9 @@ class textProcessor:
             t_1 = history[1]
             tag = history[2]
             word = history[3]
+            prev_word = history[4]
             for possible_tag in self.tags_set:
-                possible_history = (t_2, t_1, possible_tag, word)
+                possible_history = (t_2, t_1, possible_tag, word, prev_word)
                 H_tag.append(possible_history)
         return H_tag
 
@@ -273,12 +345,12 @@ class textProcessor:
         :param history: one history sample
         :return: the history's feature vector
         """
-        # TODO remove np shit
-        # history = (t-2,t-1,t,w)
+        # history = (t-2,t-1,t,w,prev_word)
         t_2 = history[0]
         t_1 = history[1]
         tag = history[2]
         word = history[3]
+        prev_word = history[4]
 
         hot_places = []
         #   f100    (word,tag)
@@ -323,21 +395,29 @@ class textProcessor:
         if tag in self.feature_105:
             hot_places.append(self.feature_105[tag])
 
+        #   start with capital
+        if word[0].isupper() and tag in self.feature_start_cap:
+            hot_places.append(self.feature_start_cap[tag])
+
+        #   all capital
+        if word.isupper() and tag in self.feature_all_caps:
+            hot_places.append(self.feature_all_caps[tag])
+
+        #   contains numbers
+        if (not word.isalpha()) and (tag in self.feature_contains_numbers):
+            hot_places.append(self.feature_contains_numbers[tag])
+
+        #   f106
+        if (prev_word, tag) in self.feature_106:
+            hot_places.append(self.feature_106[(prev_word, tag)])
+
         return hot_places
 
-    def generate_h_tag_for_word(self, word,t_1,t):
+    def generate_h_tag_for_word_roy(self, word,t_2,t_1,prev_word):
         h_tag = []
-        # history = (t-2,t-1,t,w)
-        for t_2 in self.tags_set:
-            history = (t_2, t_1, t, word)
-            h_tag.append(history)
-        return h_tag
-
-    def generate_h_tag_for_word_roy(self, word,t_2,t_1):
-        h_tag = []
-        # history = (t-2,t-1,t,w)
+        # history = (t-2,t-1,t,w,prev_word)
         for t in self.tags_set:
-            history = (t_2, t_1, t, word)
+            history = (t_2, t_1, t, word, prev_word)
             h_tag.append(history)
         return h_tag
 

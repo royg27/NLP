@@ -22,6 +22,7 @@ def check_text_processor_basic():
     assert np.all(f102.values() != f103.values())
     assert np.all(f104.values() != f104.values())
     assert np.all(f104.values() != f105.values())
+
     print("analyzing dictionaries - Done")
     print("preprocess took ", end - start)
     H = s.histories
