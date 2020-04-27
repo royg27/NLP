@@ -39,7 +39,7 @@ class textProcessor:
         self.feature_all_caps_counts = OrderedDict()
         self.feature_contains_numbers_counts = OrderedDict()
         self.feature_106_counts = OrderedDict()
-
+        # TODO f107
         self.feature_start_cap = OrderedDict()
         self.feature_all_caps = OrderedDict()
         self.feature_contains_numbers = OrderedDict()

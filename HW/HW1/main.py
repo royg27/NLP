@@ -52,12 +52,19 @@ def main():
     # unit_tests.test_model(1)
     # # predict
     #s = textProcessor(['data/train1.wtag','data/train2.wtag'],thr=5)
-    s = textProcessor(['data/train1.wtag'],thr=5)
+    s = textProcessor(['data/train1.wtag'], thr=5)
     s.preprocess()
     model = MEMM(s, lamda=1)
-    model.fit(False)
+    model.fit(True)
     print("predicting")
-    model.predict('data/test1.wtag',verbose=False, num_sentences=1000,beam=3)
+    Y_pred = model.predict('data/test1.wtag', num_sentences=3, beam=3)
+    print("done predicting")
+    s = textProcessor(['data/test1.wtag'], thr=5)
+    s.preprocess()
+    Y = s.tags
+    acc = model.accuracy(Y[:3], Y_pred)
+    model.confusion_matrix_roy(Y[:3], Y_pred)
+    print("acc = ", acc)
     # # hyperparameter search
     # hyperparameter_tuning()
     return

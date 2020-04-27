@@ -3,7 +3,9 @@ from textProcessor import textProcessor
 from scipy.optimize import fmin_l_bfgs_b
 from numpy import savetxt
 from numpy import loadtxt
-
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+import pylab as pl
 
 class MEMM:
     def __init__(self, textProcessor : textProcessor, lamda=0.01, sigma=0.001):
@@ -101,30 +103,73 @@ class MEMM:
         self.v = optimal_params[0]
         savetxt('weights.csv', self.v, delimiter=',')
 
-    def predict(self,file_path,verbose=False,beam=3, num_sentences=-1):
+    def confusion_matrix_roy(self, Y, Y_pred):
+        tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
+        labels = self.processor.tags_set
+        y_test = [y for x in Y for y in x]
+        y_pred = [y for x in Y_pred for y in x]
+        conf_mat = confusion_matrix(y_test, y_pred, labels)
+        truncated_conf_mat = conf_mat[tags_to_show, :]
+        print(truncated_conf_mat)
+        # TODO make nice graph
+
+    def get_worst_tags_roy(self, Y, Y_pred, num_worst = 10):
+        """
+        :param Y: GT of the tags
+        :param Y_pred: The predicted tags
+        :return: A list of the worst predicted tags
+        """
+        possible_tags = self.processor.tags_set
+        word_acc = dict() # np.zeros(shape=len(possible_tags))
+        for tag in possible_tags:
+            word_acc[tag] = (0, 0)
+
+        for idx_sentence, sentence_tags in enumerate(Y):
+            for idx_word, word_tag in enumerate(sentence_tags):
+                curr_count, curr_right = word_acc[word_tag]
+                if word_tag == Y_pred[idx_sentence][idx_word]:
+                    curr_right += 1
+                curr_count += 1
+                word_acc[word_tag] = (curr_count, curr_right)
+
+        tag_res = np.zeros(shape=len(possible_tags))
+        for idx, tag in enumerate(possible_tags):
+            count, right = word_acc[tag]
+            if count == 0:
+                continue
+            tag_res[idx] = 1 - (right/count)
+
+        worse_tags_idx = np.argsort(tag_res)[:num_worst]
+        print(possible_tags[worse_tags_idx])
+        return worse_tags_idx
+
+    def accuracy(self, Y, Y_pred):
+        """
+        :param Y: list of ground truth tags
+        :param Y_pred: list of our model's tags
+        :return: accuracy score per word
+        """
+        correct_count = 0
+        total_count = 0
+        for idx_sentence, sentence_tags in enumerate(Y):
+            for idx_word, word_tag in enumerate(sentence_tags):
+                if word_tag == Y_pred[idx_sentence][idx_word]:
+                    correct_count += 1
+                total_count += 1
+        return correct_count/total_count
+
+    def predict(self, file_path, beam=3, num_sentences=-1):
         s = textProcessor([file_path])
         s.preprocess()
-        if num_sentences==-1:
+        if num_sentences == -1:
             num_sentences = len(s.sentences)
         av_acc = 0
+        y_pred = []
         for idx, sentence in enumerate(s.sentences):
             if idx >= num_sentences:
                 break
-            y_pred = self.viterbi_roy(sentence, beam=beam)
-            pred = np.array(y_pred)
-            if verbose:
-                print(sentence)
-                print("Ground truth:")
-                print(s.tags[idx])
-                print("predicted:")
-                print(pred)
-            ground_truth = np.array(s.tags[idx])
-            acc = (pred == ground_truth).sum() / ground_truth.shape[0]
-            if verbose:
-                print("acc iter ",idx," = ", acc)
-            av_acc += acc
-        print("total acc = ",float(av_acc)/num_sentences)
-        return float(av_acc)/num_sentences
+            y_pred.append(self.viterbi_roy(sentence, beam=beam))
+        return y_pred
 
     def viterbi_roy(self, sentence=['In','other','words', ',','it','was'],beam=3):
         pi = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
