@@ -3,9 +3,9 @@ from textProcessor import textProcessor
 from scipy.optimize import fmin_l_bfgs_b
 from numpy import savetxt
 from numpy import loadtxt
-from sklearn.metrics import confusion_matrix
-from sklearn.preprocessing import LabelEncoder
-import pylab as pl
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import pickle
 
 class MEMM:
     def __init__(self, textProcessor : textProcessor, lamda=0.01, sigma=0.001):
@@ -88,9 +88,11 @@ class MEMM:
         grad = empirical_counts - expected_counts - (self.lamda * self.v)
         return grad
 
-    def fit(self,load_weights=True):
+    def fit(self,load_weights=True, weights_path="trained_weights"):
         if load_weights:
-            self.v = loadtxt('weights.csv')
+            with open(weights_path, 'rb') as f:
+                optimal_params = pickle.load(f)
+            self.v = optimal_params[0]
             return
         H = self.processor.histories
         H_tag = self.processor.generate_H_tag()
@@ -100,8 +102,9 @@ class MEMM:
         args = (empirical_counts, F_tag, F, len(self.processor.tags_set))
         w_0 = np.zeros(self.processor.f_length, dtype=np.float64)
         optimal_params=fmin_l_bfgs_b(func=self.calc_objective_per_iter, x0=w_0, args=args, maxiter=1000, iprint=0)
+        with open(weights_path, 'wb') as f:
+            pickle.dump(optimal_params, f)
         self.v = optimal_params[0]
-        savetxt('weights.csv', self.v, delimiter=',')
 
     def confusion_matrix_roy(self, Y, Y_pred):
         tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
@@ -110,8 +113,11 @@ class MEMM:
         y_pred = [y for x in Y_pred for y in x]
         conf_mat = confusion_matrix(y_test, y_pred, labels)
         truncated_conf_mat = conf_mat[tags_to_show, :]
-        print(truncated_conf_mat)
-        # TODO make nice graph
+        print(conf_mat)
+        # make nice graph
+        disp = ConfusionMatrixDisplay(conf_mat, labels)
+        disp = disp.plot(include_values=False ,cmap='viridis', ax=None, xticks_rotation='horizontal')
+        plt.show()
 
     def get_worst_tags_roy(self, Y, Y_pred, num_worst = 10):
         """

@@ -55,15 +55,16 @@ def main():
     s = textProcessor(['data/train1.wtag'], thr=5)
     s.preprocess()
     model = MEMM(s, lamda=1)
-    model.fit(True)
+    model.fit(False)
     print("predicting")
-    Y_pred = model.predict('data/test1.wtag', num_sentences=3, beam=3)
+    num_sentences_to_tag = 100
+    Y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences_to_tag, beam=3)
     print("done predicting")
     s = textProcessor(['data/test1.wtag'], thr=5)
     s.preprocess()
     Y = s.tags
-    acc = model.accuracy(Y[:3], Y_pred)
-    model.confusion_matrix_roy(Y[:3], Y_pred)
+    acc = model.accuracy(Y[:num_sentences_to_tag], Y_pred)
+    model.confusion_matrix_roy(Y[:num_sentences_to_tag], Y_pred)
     print("acc = ", acc)
     # # hyperparameter search
     # hyperparameter_tuning()
