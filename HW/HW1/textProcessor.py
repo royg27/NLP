@@ -354,6 +354,7 @@ class textProcessor:
 
         hot_places = []
         #   f100    (word,tag)
+        #print('word: ', word, " tag: ", tag)
         if (word, tag) in self.feature_100:
             hot_places.append(self.feature_100[(word, tag)])
 

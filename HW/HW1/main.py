@@ -21,6 +21,14 @@ def train_model(s : textProcessor):
     print("training time = ",end-start)
     return model
 
+def fill_file():
+    train_file = 'data/train1.wtag'
+    s = textProcessor(['data/train1.wtag'], thr=5)
+    s.preprocess()
+    model = MEMM(s, lamda=1, sigma=0.001)
+    model.fit(False)
+    predict_file = 'data/comp2.words'
+    model.add_prediction_to_file_roy(predict_file, num_sentences=5, beam=3)
 
 def hyperparameter_tuning():
     # best found - thr = 5, lambda = 1 -> 83.67%
@@ -31,6 +39,8 @@ def hyperparameter_tuning():
     best_thr = -1
     for thr in processor_thr:
         for lmbda in model_lambda:
+            thr = 5
+            lmbda = 1
             print("testing thr =",thr, " lambda = ", lmbda)
             s = textProcessor(['data/train1.wtag'],thr=thr)
             s.preprocess()
@@ -52,6 +62,8 @@ def main():
     # unit_tests.test_model(1)
     # # predict
     #s = textProcessor(['data/train1.wtag','data/train2.wtag'],thr=5)
+    fill_file()
+    return
     s = textProcessor(['data/train1.wtag'], thr=5)
     s.preprocess()
     model = MEMM(s, lamda=1)

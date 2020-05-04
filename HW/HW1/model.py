@@ -3,8 +3,8 @@ from textProcessor import textProcessor
 from scipy.optimize import fmin_l_bfgs_b
 from numpy import savetxt
 from numpy import loadtxt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
+#from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+#import matplotlib.pyplot as plt
 import pickle
 
 class MEMM:
@@ -13,7 +13,9 @@ class MEMM:
         self.processor = textProcessor
         self.lamda = lamda
         #   Standard deviation initialization for the weights vector
+        print(self.processor.f_length)
         self.v = sigma * np.random.randn(self.processor.f_length)
+
 
     def calc_objective_per_iter(self, w_i, *args):
         #   extract the parameters from args
@@ -106,7 +108,7 @@ class MEMM:
             pickle.dump(optimal_params, f)
         self.v = optimal_params[0]
 
-    def confusion_matrix_roy(self, Y, Y_pred):
+    """def confusion_matrix_roy(self, Y, Y_pred):
         tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
         labels = self.processor.tags_set
         y_test = [y for x in Y for y in x]
@@ -117,7 +119,7 @@ class MEMM:
         # make nice graph
         disp = ConfusionMatrixDisplay(conf_mat, labels)
         disp = disp.plot(include_values=False ,cmap='viridis', ax=None, xticks_rotation='horizontal')
-        plt.show()
+        plt.show()"""
 
     def get_worst_tags_roy(self, Y, Y_pred, num_worst = 10):
         """
@@ -163,6 +165,64 @@ class MEMM:
                     correct_count += 1
                 total_count += 1
         return correct_count/total_count
+
+    def add_prediction_to_file_roy(self, predict_file, num_sentences = -1, beam = 3):
+        """
+        Adds our prediction to a given text, that has no prior prediction.
+        :param predict_file: The file which we are tagging.
+        :param num_sentences: The number of sentences we want to tag.
+                               -1 by default, meaning we want to tag the entire text.
+        :param beam: The size of the beam for the Viterby algorithm.
+        :return: Writes the sentences with the prediction into a new file,
+                 bearing the name of the predict_file with "with_predictions".
+        """
+        f = open(predict_file, 'r')
+        sentences = []
+        if num_sentences == -1:
+            for single_line in f:
+                line = f.readline()
+                line = line[:-1]
+                line = line.split(sep = ' ')
+                sentences += [line]
+        else:
+            for i in range(num_sentences):
+                line = f.readline()
+                line = line[:-1]
+                line = line.split(sep = ' ')
+                sentences += [line]
+        #print(sentences)
+        y_pred = []
+        for idx, sentence in enumerate(sentences):
+            if idx >= num_sentences and num_sentences != -1:
+                break
+            sentence_tags = []
+            for word in sentence:
+                sentence_tags.append(self.viterbi_roy([word], beam=beam))
+            y_pred.append(sentence_tags)
+        #print("len(sentences): ", len(sentences), " len(y_pred): ", len(y_pred))
+
+        file_to_write = predict_file[:-6] + "with_predictions" + ".words"
+        with open(file_to_write, 'w') as file:
+            idx_sentence = 0
+            all_sentences = []
+            for sentence_tags, sentence in zip(y_pred, sentences):
+                new_sentence = []
+                if idx_sentence >= num_sentences and num_sentences != -1:
+                    continue
+                #print("sentence_tags: ", sentence_tags, " sentence: ", sentence, " number: ", idx_sentence)
+                for tag, word in zip(sentence_tags, sentence):
+                    #tag = y_pred[idx_sentence][idx_word]
+                    tagged_word = word + '_' + tag[0] + ' '
+                    new_sentence.append(tagged_word)
+                    #print("tagged_word: ", tagged_word)
+                #print("new_sentence: ", new_sentence)
+                new_sentence.append('\n')
+                all_sentences += new_sentence
+                idx_sentence += 1
+
+            file.writelines(all_sentences)
+        return y_pred
+
 
     def predict(self, file_path, beam=3, num_sentences=-1):
         s = textProcessor([file_path])
