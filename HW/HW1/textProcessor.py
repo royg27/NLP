@@ -397,7 +397,9 @@ class textProcessor:
             hot_places.append(self.feature_105[tag])
 
         #   start with capital
-        if word[0].isupper() and tag in self.feature_start_cap:
+        #if word is not None: print(word)
+        # print(word, type(word), " len: ", len(word))
+        if len(word) > 0 and word[0].isupper() and tag in self.feature_start_cap:
             hot_places.append(self.feature_start_cap[tag])
 
         #   all capital

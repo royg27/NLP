@@ -180,17 +180,17 @@ class MEMM:
         sentences = []
         if num_sentences == -1:
             for single_line in f:
-                line = f.readline()
-                line = line[:-1]
-                line = line.split(sep = ' ')
-                sentences += [line]
+                #line = f.readline()
+                single_line = single_line[:-1]
+                single_line = single_line.split(sep = ' ')
+                sentences += [single_line]
         else:
             for i in range(num_sentences):
                 line = f.readline()
                 line = line[:-1]
                 line = line.split(sep = ' ')
                 sentences += [line]
-        #print(sentences)
+        print("len(sentences): ", len(sentences))
         y_pred = []
         for idx, sentence in enumerate(sentences):
             if idx >= num_sentences and num_sentences != -1:
@@ -199,7 +199,7 @@ class MEMM:
             for word in sentence:
                 sentence_tags.append(self.viterbi_roy([word], beam=beam))
             y_pred.append(sentence_tags)
-        #print("len(sentences): ", len(sentences), " len(y_pred): ", len(y_pred))
+        print("len(sentences): ", len(sentences), " len(y_pred): ", len(y_pred))
 
         file_to_write = predict_file[:-6] + "with_predictions" + ".words"
         with open(file_to_write, 'w') as file:
