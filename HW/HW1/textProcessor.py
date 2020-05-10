@@ -7,8 +7,8 @@ from collections import OrderedDict
 
 
 class textProcessor:
-    def __init__(self, path_file_name, thr=3):
-        #np.random.seed(13)
+    def __init__(self, path_file_name, thr=3, use_extra_features=True):
+        self.use_extra_features = use_extra_features
         self.thr = thr
         self.lines = []
         for file in path_file_name:
@@ -105,10 +105,11 @@ class textProcessor:
         finish_idx = self.fill_feature_104_dictionary(finish_idx)
         finish_idx = self.fill_feature_105_dictionary(finish_idx)
         #   additional features
-        finish_idx = self.fill_feature_start_cap(finish_idx)
-        finish_idx = self.fill_feature_all_caps(finish_idx)
-        finish_idx = self.fill_feature_contains_numbers(finish_idx)
-        finish_idx = self.fill_feature_106_dictionary(finish_idx)
+        if self.use_extra_features:
+            finish_idx = self.fill_feature_start_cap(finish_idx)
+            finish_idx = self.fill_feature_all_caps(finish_idx)
+            finish_idx = self.fill_feature_contains_numbers(finish_idx)
+            finish_idx = self.fill_feature_106_dictionary(finish_idx)
         #   length of feature
         self.f_length = finish_idx
 
@@ -198,6 +199,10 @@ class textProcessor:
                 self.feature_105_counts[tag] += 1
             else:
                 self.feature_105_counts[tag] = 1
+
+            if not self.use_extra_features:
+                return
+
             #   f106
             if (prev_word, tag) in self.feature_106_counts:
                 self.feature_106_counts[(prev_word, tag)] += 1
@@ -396,8 +401,9 @@ class textProcessor:
         if tag in self.feature_105:
             hot_places.append(self.feature_105[tag])
 
+        if not self.use_extra_features:
+            return
         #   start with capital
-        #if word is not None: print(word)
         # print(word, type(word), " len: ", len(word))
         if len(word) > 0 and word[0].isupper() and tag in self.feature_start_cap:
             hot_places.append(self.feature_start_cap[tag])
@@ -423,64 +429,3 @@ class textProcessor:
             history = (t_2, t_1, t, word, prev_word)
             h_tag.append(history)
         return h_tag
-
-    # TODO if generate_feature_vector works delete it
-    # def generate_feature_vector2(self, history):
-    #     # history = (t-2,t-1,t,w)
-    #     t_2 = history[0]
-    #     t_1 = history[1]
-    #     tag = history[2]
-    #     word = history[3]
-    #
-    #     # f100
-    #     f100_idx = self.feature_100[(word, tag)]
-    #     f100 = np.zeros(len(self.feature_100))
-    #     f100[f100_idx] = 1
-    #
-    #     # f101
-    #     f101_idx = self.feature_101[tag]
-    #     f101 = np.zeros(len(self.feature_101))
-    #     if word[-3:] == "ing":
-    #         f101[f101_idx] = 1
-    #
-    #     # f102
-    #     f102_idx = self.feature_102[tag]
-    #     f102 = np.zeros(len(self.feature_102))
-    #     if word[:3] == "pre":
-    #         f102[f102_idx] = 1
-    #
-    #     # f103
-    #     f103_idx = self.feature_103[(t_2,t_1,tag)]
-    #     f103 = np.zeros(len(self.feature_103))
-    #     f103[f103_idx] = 1
-    #
-    #     # f104
-    #     f104_idx = self.feature_104[(t_1,tag)]
-    #     f104 = np.zeros(len(self.feature_104))
-    #     f104[f104_idx] = 1
-    #
-    #     # f105
-    #     f105_idx = self.feature_105[tag]
-    #     f105 = np.zeros(len(self.feature_105))
-    #     f105[f105_idx] = 1
-    #
-    #     final_feature_vector = np.concatenate((f100, f101, f102, f103, f104, f105))
-    #     return final_feature_vector
-    #
-    #
-    # def generate_expected_count_features(self, history):
-    #     # history = (t-2,t-1,t,w)
-    #     t_2 = history[0]
-    #     t_1 = history[1]
-    #     tag = history[2]
-    #     word = history[3]
-    #
-    #     expected_count_features = []
-    #     for possible_tag in self.tags_set:
-    #         possible_history = (t_2, t_1, possible_tag, word)
-    #         expected_count_features.append(self.generate_feature_vector(possible_history))
-    #     assert len(expected_count_features) == len(self.tags_set)
-    #     if settings.use_vectorized_sparse:
-    #         return csr_matrix(expected_count_features)
-    #     else:
-    #         return expected_count_features

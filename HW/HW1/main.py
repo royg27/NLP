@@ -13,45 +13,61 @@ def train_processor():
 
 def train_model(s : textProcessor):
     model = MEMM(s)
-    init_v = np.copy(model.v)
-
     start = time.time()
     model.fit(False)
     end = time.time()
     print("training time = ",end-start)
     return model
 
-def fill_file():
-    train_file = 'data/train1.wtag'
-    s = textProcessor(['data/train2.wtag'], thr=5)
+
+def fill_file(file_to_predict, tagged_file_name):
+    s = textProcessor(['data/train1.wtag'], thr=5)
     s.preprocess()
     model = MEMM(s, lamda=1, sigma=0.001)
     model.fit(False)
-    predict_file = 'data/comp2.words'
-    model.add_prediction_to_file_roy(predict_file, num_sentences=-1, beam=3)
+    predict_file = file_to_predict
+    model.generate_predicted_file(predict_file, tagged_file_name, beam=3)
+
 
 def hyperparameter_tuning():
-    # best found - thr = 5, lambda = 1 -> 83.67%
-    processor_thr = [5]
-    model_lambda = [0.9, 1,2]
+    num_sentences = 100
+    processor_thr = [3,5,7]
+    model_lambda = [0.1, 0.5, 0.9, 1, 2]
+    use_additional_features = [True, False]
     max_val = 0
     best_lmbda = -1
     best_thr = -1
-    for thr in processor_thr:
-        for lmbda in model_lambda:
-            thr = 5
-            lmbda = 1
-            print("testing thr =",thr, " lambda = ", lmbda)
-            s = textProcessor(['data/train1.wtag'],thr=thr)
-            s.preprocess()
-            model = MEMM(s,lamda=lmbda)
-            model.fit(False)
-            val = model.predict('data/train2.wtag', verbose=False, num_sentences=100, beam=3)
-            if val > max_val:
-                best_lmbda = lmbda
-                best_thr = thr
-                max_val = val
-    print("best acc = ",max_val, " thr = ", best_thr, " lambda = ", best_lmbda)
+    best_beam = -1
+    best_use_additional = True
+    s_val = textProcessor(['data/test1.wtag'])
+    s_val.preprocess()
+    Y = s_val.tags[0:num_sentences]
+    for use_extra in use_additional_features:
+        for thr in processor_thr:
+            for lmbda in model_lambda:
+                print("testing thr =",thr, " lambda = ", lmbda)
+                s = textProcessor(['data/train1.wtag'],thr=thr, use_extra_features=use_extra)
+                s.preprocess()
+                model = MEMM(s,lamda=lmbda)
+                model.fit(False)
+                y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences, beam=3)
+                cur_acc = model.accuracy(Y, y_pred)
+                if cur_acc > max_val:
+                    best_lmbda = lmbda
+                    best_thr = thr
+                    max_val = cur_acc
+                    best_beam = 3
+                    best_use_additional = use_extra
+                y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences, beam=5)
+                cur_acc = model.accuracy(Y, y_pred)
+                if cur_acc > max_val:
+                    best_lmbda = lmbda
+                    best_thr = thr
+                    max_val = cur_acc
+                    best_beam = 5
+                    best_use_additional = use_extra
+    print("best acc = ",max_val, " thr = ", best_thr, " lambda = ", best_lmbda, " beam = ",best_beam, " use extra = ", best_use_additional)
+
 
 def training_part():
     print("model 1 training:")
@@ -63,8 +79,8 @@ def training_part():
     s_2 = textProcessor(['data/train2.wtag'], thr=5)
     s_2.preprocess()
     train_model(s_2)
-
     return
+
 
 def roy():
     # train processor
@@ -92,8 +108,11 @@ def roy():
     #fill_file()
     return
 
+
 def main():
-    training_part()
+    # fill_file()
+    hyperparameter_tuning()
+    # training_part()
     return
 
 

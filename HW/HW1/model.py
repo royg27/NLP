@@ -1,11 +1,11 @@
 import numpy as np
 from textProcessor import textProcessor
 from scipy.optimize import fmin_l_bfgs_b
-from numpy import savetxt
-from numpy import loadtxt
+import re
 #from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 #import matplotlib.pyplot as plt
 import pickle
+
 
 class MEMM:
     def __init__(self, textProcessor : textProcessor, lamda=0.01, sigma=0.001):
@@ -13,9 +13,7 @@ class MEMM:
         self.processor = textProcessor
         self.lamda = lamda
         #   Standard deviation initialization for the weights vector
-        print(self.processor.f_length)
         self.v = sigma * np.random.randn(self.processor.f_length)
-
 
     def calc_objective_per_iter(self, w_i, *args):
         #   extract the parameters from args
@@ -90,7 +88,7 @@ class MEMM:
         grad = empirical_counts - expected_counts - (self.lamda * self.v)
         return grad
 
-    def fit(self,load_weights=True, weights_path="trained_weights"):
+    def fit(self, load_weights=True, weights_path="trained_weights"):
         if load_weights:
             with open(weights_path, 'rb') as f:
                 optimal_params = pickle.load(f)
@@ -166,62 +164,23 @@ class MEMM:
                 total_count += 1
         return correct_count/total_count
 
-    def add_prediction_to_file_roy(self, predict_file, num_sentences = -1, beam = 3):
-        """
-        Adds our prediction to a given text, that has no prior prediction.
-        :param predict_file: The file which we are tagging.
-        :param num_sentences: The number of sentences we want to tag.
-                               -1 by default, meaning we want to tag the entire text.
-        :param beam: The size of the beam for the Viterby algorithm.
-        :return: Writes the sentences with the prediction into a new file,
-                 bearing the name of the predict_file with "with_predictions".
-        """
-        f = open(predict_file, 'r')
-        sentences = []
-        if num_sentences == -1:
-            for single_line in f:
-                #line = f.readline()
-                single_line = single_line[:-1]
-                single_line = single_line.split(sep = ' ')
-                sentences += [single_line]
-        else:
-            for i in range(num_sentences):
-                line = f.readline()
-                line = line[:-1]
-                line = line.split(sep = ' ')
-                sentences += [line]
-        print("len(sentences): ", len(sentences))
-        y_pred = []
-        for idx, sentence in enumerate(sentences):
-            if idx >= num_sentences and num_sentences != -1:
-                break
-            sentence_tags = []
-            for word in sentence:
-                sentence_tags.append(self.viterbi_roy([word], beam=beam))
-            y_pred.append(sentence_tags)
-        print("len(sentences): ", len(sentences), " len(y_pred): ", len(y_pred))
-
-        file_to_write = predict_file[:-6] + "with_predictions" + ".words"
-        with open(file_to_write, 'w') as file:
-            idx_sentence = 0
-            all_sentences = []
-            for sentence_tags, sentence in zip(y_pred, sentences):
-                new_sentence = []
-                if idx_sentence >= num_sentences and num_sentences != -1:
-                    continue
-                #print("sentence_tags: ", sentence_tags, " sentence: ", sentence, " number: ", idx_sentence)
-                for tag, word in zip(sentence_tags, sentence):
-                    #tag = y_pred[idx_sentence][idx_word]
-                    tagged_word = word + '_' + tag[0] + ' '
-                    new_sentence.append(tagged_word)
-                    #print("tagged_word: ", tagged_word)
-                #print("new_sentence: ", new_sentence)
-                new_sentence.append('\n')
-                all_sentences += new_sentence
-                idx_sentence += 1
-
-            file.writelines(all_sentences)
-        return y_pred
+    def generate_predicted_file(self, file, output_file, beam=3):
+        f = open(file, 'r')
+        f_output = open(output_file, 'w')
+        for line in f.readlines():
+            sentence = re.split(' |\n', line)
+            del sentence[-1]
+            tags = self.viterbi(sentence, beam=beam)
+            tagged_sentence = []
+            for idx, (word, tag) in enumerate(zip(sentence, tags)):
+                if idx == 0:
+                    tagged_sentence.append(word + "_" + tag)
+                else:
+                    tagged_sentence.append(" " + word + "_" + tag)
+            tagged_sentence.append("\n")
+            f_output.writelines(tagged_sentence)
+        f.close()
+        f_output.close()
 
 
     def predict(self, file_path, beam=3, num_sentences=-1):
@@ -234,10 +193,10 @@ class MEMM:
         for idx, sentence in enumerate(s.sentences):
             if idx >= num_sentences:
                 break
-            y_pred.append(self.viterbi_roy(sentence, beam=beam))
+            y_pred.append(self.viterbi(sentence, beam=beam))
         return y_pred
 
-    def viterbi_roy(self, sentence=['In','other','words', ',','it','was'],beam=3):
+    def viterbi(self, sentence=['In', 'other', 'words', ',', 'it', 'was'], beam=3):
         pi = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         bp = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         #   init pi(0),bp(0
@@ -299,172 +258,3 @@ class MEMM:
         for t in tags:
             ret_val.append(tags_list[int(t)])
         return ret_val[1:]
-
-
-
-
-
-
-    # def viterbi(self, sentence=['The','Treasury','is', 'still'], beam=3):
-    #     pi = np.zeros((len(sentence)+1, len(self.processor.tags_set), len(self.processor.tags_set)))
-    #     #   init pi(0)
-    #     star_idx = np.where(self.processor.tags_set == '*')[0][0]
-    #     pi[0,star_idx,star_idx] = 1
-    #     relevant_idx = []
-    #     relevant_tags = []
-    #     for idx, word in enumerate(sentence):
-    #         #   create all possible histories
-    #         if idx==0:
-    #             relevant_idx = [star_idx]
-    #             relevant_tags = ['*']
-    #         for row,u in zip(relevant_idx, relevant_tags):    # when implementing beam, run only on top k
-    #             # u is the t_1, last tag
-    #             for col,v in enumerate(self.processor.tags_set):
-    #                 # v is the current tag
-    #                 h_tag = self.processor.generate_h_tag_for_word(word,u,v)
-    #                 F_tag = self.processor.generate_F(h_tag)
-    #                 q = self.vectorized_softmax(F_tag, self.v, len(self.processor.tags_set))
-    #                 pi_v = pi[idx, :, row]
-    #                 val = np.multiply(q, pi_v)
-    #                 pi[idx + 1, row, col] = np.max(val)
-    #         #   beam search
-    #         relevant_idx = np.argsort(pi[idx + 1, row, :])[-beam:]
-    #         relevant_tags = self.processor.tags_set[relevant_idx]
-    #         print(pi[idx+1,:,:])
-    #
-    #                 # max_val = -1 * np.inf
-    #                 # for t_idx, tag in enumerate(self.processor.tags_set):
-    #                 #     val = pi[idx, t_idx, u] * q[t_idx]
-    #                 #     if val > max_val:
-    #                 #         max_val = val
-    #                 # pi[idx+1,row,col] = max_val
-    #     return
-
-
-
-    # def fit2(self):
-    #     H = self.processor.histories
-    #     H_tag = self.processor.generate_H_tag()
-    #     F = self.processor.generate_F(H)
-    #     F_tag = self.processor.generate_F(H_tag)
-    #     #
-    #
-    #     print("F.shape ",F.shape)
-    #     print("F_tag.shape ", F_tag.shape)
-    #     empirical_counts = F.sum(axis=0)
-    #     print(empirical_counts.shape)
-    #     print(empirical_counts)
-    #
-    #     #   set params for Gradient Ascent library function
-    #     args = (empirical_counts, F_tag, F, len(self.processor.tags_set))
-    #     w_0 = np.zeros(self.processor.f_length, dtype=np.float64)
-    #     optimal_params = fmin_l_bfgs_b(func=self.calc_objective_per_iter, x0=w_0, args=args, maxiter=1000, iprint=99)
-    #     weights = optimal_params[0]
-
-    # def calc_gradient(self, f_x_y, f_x_y_tags):
-    #     """
-    #     :param f_x_y: f(x,y)
-    #     :param f_x_y_tags: Vector of f(x,y') where y'!=y, for all possible tags of y
-    #     :return: Vector that equals to dL/dv
-    #     """
-    #     emprical_counts = f_x_y
-    #     expected_counts = np.zeros(f_x_y.shape[0])
-    #     for f in f_x_y_tags:
-    #         expected_counts += (self.our_softmax(f, f_x_y_tags) * f)
-    #     grad = emprical_counts - expected_counts - (self.lamda * self.v)
-    #     return grad
-
-
-    #
-    # def calc_objective_per_iter(self, w_i, *args):
-    #     """
-    #         Calculate max entropy likelihood for an iterative optimization method
-    #         :param w_i: weights vector in iteration i
-    #         :param arg_i: arguments passed to this function, such as lambda hyperparameter for regularization
-    #
-    #             The function returns the Max Entropy likelihood (objective) and the objective gradient
-    #     """
-    #     print("calc_objective_per_iter")
-    #     empirical_count = args[0]
-    #     F_tag =args[1]
-    #     F = args[2]
-    #     h_tag_len = args[3]
-    #     grad = self.vectorized_calc_gradient(empirical_count, F_tag, h_tag_len, w_i)
-    #     print("|grad| = ", np.linalg.norm(grad))
-    #     likelihood = self.vectorized_calc_likelihood(F, F_tag, h_tag_len, w_i)
-    #     return (-1) * likelihood, (-1) * grad
-
-    # def our_softmax(self, f_x_y, f_x_y_tags):
-    #     """
-    #
-    #     :param f_x_y:
-    #     :param f_x_y_tags:
-    #     :return:
-    #     """
-    #     nominator = np.exp(np.dot(self.v, f_x_y))
-    #     # the loop calcs all the possible exp dot for every tag
-    #     denominator = np.sum([np.exp(np.dot(self.v, f_x_y_t)) for f_x_y_t in f_x_y_tags])
-    #     soft_max_res = nominator/denominator
-    #     assert (soft_max_res >= 0 and soft_max_res <=1)
-    #     return soft_max_res
-
-
-    # def vectorized_softmax(self,F,w_i):
-    #     """
-    #
-    #     :param F: is N*M where each row is a sparse vector
-    #     :return:
-    #     """
-    #     print("vectorized_softmax")
-    #     print("w_i = ",w_i)
-    #     print("none zeros in F' = ", F.count_nonzero()/F.shape[0])
-    #     F_V = F.dot(w_i)
-    #     exp_F_V = np.exp(F_V,dtype=np.double)
-    #     print("max(exp_F_V)", np.max(exp_F_V), "max(w_i) = ",np.max(w_i))
-    #     print("type(exp_F_V[0]) = ", type(exp_F_V[0]))
-    #     sum_exp_F_V = np.sum(exp_F_V)
-    #     print("sum_exp_F_V = ", sum_exp_F_V)
-    #     softmax_val = exp_F_V/sum_exp_F_V
-    #     print("softmax_val[0] = ",softmax_val[0])
-    #     return softmax_val
-    #
-    # def vectorized_calc_gradient(self, empirical_counts, F, h_tag_len, w_i):
-    #     """
-    #     :param empirical_counts:
-    #     :param F:
-    #     :return:
-    #     """
-    #     print("vectorized_calc_gradient")
-    #     P = self.vectorized_softmax(F, w_i)[:,np.newaxis]
-    #     expected_counts = F.multiply(P)
-    #     expected_counts = expected_counts.sum(axis=0)
-    #     expected_counts = np.ravel(expected_counts)
-    #     grad = empirical_counts - expected_counts - (self.lamda * self.v)
-    #     return grad
-
-    # def fit(self, num_epochs):
-    #     for epoch in range(num_epochs):
-    #         grad = np.zeros(self.processor.f_length)
-    #         # run over sentences
-    #         for idx,H in enumerate(self.processor.histories[0:1]):
-    #             # run over histories of a given sentence
-    #             print("working on sentence ",idx)
-    #             for i, h in enumerate(H):
-    #                 print("working on history ", i)
-    #                 f = self.processor.generate_feature_vector(h)
-    #                 F = self.processor.generate_expected_count_features(h)
-    #                 if settings.use_vectorized_sparse:
-    #                     cur_grad = self.vectorized_calc_gradient(f, F)
-    #                     assert np.count_nonzero(cur_grad) != 0
-    #                     grad += cur_grad
-    #                 else:
-    #                     grad += self.calc_gradient(f,F)
-    #
-    #             #   update v vector after a batch - a sentence
-    #             delta_v = (self.lr * grad)
-    #             assert np.count_nonzero(delta_v) != 0
-    #             self.v += (self.lr * grad)
-    #     # load weights to csv files
-    #     savetxt('weights.csv',self.v, delimiter=',')
-
-
