@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 
 class textProcessor:
-    def __init__(self, path_file_name, thr=3, thr_2=7):
+    def __init__(self, path_file_name, thr=3, thr_2=3):
         self.thr = thr
         self.thr_common = thr_2
         self.lines = []
@@ -114,10 +114,10 @@ class textProcessor:
         finish_idx = self.fill_feature_contains_numbers(finish_idx)
         finish_idx = self.fill_feature_contains_hyphen(finish_idx)
         finish_idx = self.fill_feature_106_dictionary(finish_idx)
-        finish_idx = self.fill_feature_107_dictionary(finish_idx)
+        # finish_idx = self.fill_feature_107_dictionary(finish_idx)
 
         # print(len(self.feature_100), len(self.feature_101), len(self.feature_102), len(self.feature_103), len(self.feature_104),
-        #       len(self.feature_105), len(self.feature_106), len(self.feature_107), len(self.feature_contains_hyphen), len(self.feature_all_caps),
+        #       len(self.feature_105), len(self.feature_106), len(self.feature_contains_hyphen), len(self.feature_all_caps),
         #       len(self.feature_contains_numbers), len(self.feature_start_cap))
         #   length of feature
         self.f_length = finish_idx
@@ -215,11 +215,11 @@ class textProcessor:
                 self.feature_106_counts[(prev_word, tag)] += 1
             else:
                 self.feature_106_counts[(prev_word, tag)] = 1
-            #   f107
-            if (next_word, tag) in self.feature_107_counts:
-                self.feature_107_counts[(next_word, tag)] += 1
-            else:
-                self.feature_107_counts[(next_word, tag)] = 1
+            # #   f107
+            # if (next_word, tag) in self.feature_107_counts:
+            #     self.feature_107_counts[(next_word, tag)] += 1
+            # else:
+            #     self.feature_107_counts[(next_word, tag)] = 1
 
             #   feature_start_cap_counts
             if word[0].isupper() and tag in self.feature_start_cap_counts:
@@ -345,7 +345,7 @@ class textProcessor:
         idx = start_idx
         for word in self.words_set:
             for tag in self.tags_set:
-                if (word, tag) in self.feature_107_counts and self.feature_107_counts[(word, tag)] >= self.thr_common:
+                if (word, tag) in self.feature_107_counts and self.feature_107_counts[(word, tag)] >= self.thr:
                     self.feature_107[(word, tag)] = idx
                     idx += 1
         return idx
@@ -457,9 +457,9 @@ class textProcessor:
         if (prev_word, tag) in self.feature_106:
             hot_places.append(self.feature_106[(prev_word, tag)])
 
-        #   f107
-        if (next_word, tag) in self.feature_107:
-            hot_places.append(self.feature_107[(next_word, tag)])
+        # #   f107
+        # if (next_word, tag) in self.feature_107:
+        #     hot_places.append(self.feature_107[(next_word, tag)])
 
         return hot_places
 

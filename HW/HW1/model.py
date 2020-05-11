@@ -65,11 +65,7 @@ class MEMM:
         linear_term = linear_term.sum()
         regularization_term = 0.5 * self.lamda * (np.linalg.norm(w_i)**2)
         f_v = F_tag.dot(w_i)
-        # numeric stability trick
-        F_V_reshaped = f_v.reshape((-1, h_tag_len))
-        F_V_max = F_V_reshaped.max(axis=1)
-        F_V_reshaped -= F_V_max[:, np.newaxis]
-        e_f_v = np.exp(F_V_reshaped)
+        e_f_v = np.exp(f_v)
         # reshape as (-1,tags)
         reshaped_e_f_v = e_f_v.reshape((-1,h_tag_len))
         summed_reshaped = reshaped_e_f_v.sum(axis=1)
