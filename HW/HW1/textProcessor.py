@@ -7,9 +7,9 @@ from collections import OrderedDict
 
 
 class textProcessor:
-    def __init__(self, path_file_name, thr=3, use_extra_features=True):
-        self.use_extra_features = use_extra_features
+    def __init__(self, path_file_name, thr=3, thr_2=7):
         self.thr = thr
+        self.thr_common = thr_2
         self.lines = []
         for file in path_file_name:
             self.file = open(file, 'r')
@@ -38,12 +38,15 @@ class textProcessor:
         self.feature_start_cap_counts = OrderedDict()
         self.feature_all_caps_counts = OrderedDict()
         self.feature_contains_numbers_counts = OrderedDict()
+        self.feature_contains_hyphen_counts = OrderedDict()
         self.feature_106_counts = OrderedDict()
-        # TODO f107
+        self.feature_107_counts = OrderedDict()
         self.feature_start_cap = OrderedDict()
         self.feature_all_caps = OrderedDict()
         self.feature_contains_numbers = OrderedDict()
+        self.feature_contains_hyphen = OrderedDict()
         self.feature_106 = OrderedDict()
+        self.feature_107 = OrderedDict()
         #
         self.prefix_set = set()
         self.suffix_set = set()
@@ -81,7 +84,8 @@ class textProcessor:
                 t_1 = self.tags[sentence_idx][word_idx-1] if word_idx > 0 else '*'
                 t_2 = self.tags[sentence_idx][word_idx-2] if word_idx > 1 else '*'
                 prev_word = sentence[word_idx-1] if word_idx>0 else '*'
-                curr_history = (t_2, t_1, t, word, prev_word)
+                next_word = sentence[word_idx+1] if word_idx+1<len(sentence) else '*'
+                curr_history = (t_2, t_1, t, word, prev_word,next_word)
                 self.histories.append(curr_history)
                 self.words_set_t.add(word)
                 self.tags_set_t.add(t)
@@ -105,11 +109,16 @@ class textProcessor:
         finish_idx = self.fill_feature_104_dictionary(finish_idx)
         finish_idx = self.fill_feature_105_dictionary(finish_idx)
         #   additional features
-        if self.use_extra_features:
-            finish_idx = self.fill_feature_start_cap(finish_idx)
-            finish_idx = self.fill_feature_all_caps(finish_idx)
-            finish_idx = self.fill_feature_contains_numbers(finish_idx)
-            finish_idx = self.fill_feature_106_dictionary(finish_idx)
+        finish_idx = self.fill_feature_start_cap(finish_idx)
+        finish_idx = self.fill_feature_all_caps(finish_idx)
+        finish_idx = self.fill_feature_contains_numbers(finish_idx)
+        finish_idx = self.fill_feature_contains_hyphen(finish_idx)
+        finish_idx = self.fill_feature_106_dictionary(finish_idx)
+        finish_idx = self.fill_feature_107_dictionary(finish_idx)
+
+        # print(len(self.feature_100), len(self.feature_101), len(self.feature_102), len(self.feature_103), len(self.feature_104),
+        #       len(self.feature_105), len(self.feature_106), len(self.feature_107), len(self.feature_contains_hyphen), len(self.feature_all_caps),
+        #       len(self.feature_contains_numbers), len(self.feature_start_cap))
         #   length of feature
         self.f_length = finish_idx
 
@@ -147,6 +156,7 @@ class textProcessor:
             tag = h[2]
             word = h[3]
             prev_word = h[4]
+            next_word = h[5]
             #   f100
             if (word,tag) in self.feature_100_counts:
                 self.feature_100_counts[(word, tag)] += 1
@@ -200,14 +210,17 @@ class textProcessor:
             else:
                 self.feature_105_counts[tag] = 1
 
-            if not self.use_extra_features:
-                return
-
             #   f106
             if (prev_word, tag) in self.feature_106_counts:
                 self.feature_106_counts[(prev_word, tag)] += 1
             else:
                 self.feature_106_counts[(prev_word, tag)] = 1
+            #   f107
+            if (next_word, tag) in self.feature_107_counts:
+                self.feature_107_counts[(next_word, tag)] += 1
+            else:
+                self.feature_107_counts[(next_word, tag)] = 1
+
             #   feature_start_cap_counts
             if word[0].isupper() and tag in self.feature_start_cap_counts:
                 self.feature_start_cap_counts[tag] += 1
@@ -223,12 +236,17 @@ class textProcessor:
                 self.feature_contains_numbers_counts[tag] += 1
             else:
                 self.feature_contains_numbers_counts[tag] = 1
+            #   contains hyphen
+            if '-' in word and tag in self.feature_contains_hyphen_counts:
+                self.feature_contains_hyphen_counts[tag] += 1
+            else:
+                self.feature_contains_hyphen_counts[tag] = 1
 
     def fill_feature_100_dictionary(self):
         idx = 0
         for word in self.words_set:
             for tag in self.tags_set:
-                if (word, tag) in self.feature_100_counts and self.feature_100_counts[(word, tag)] >= self.thr:
+                if (word, tag) in self.feature_100_counts and self.feature_100_counts[(word, tag)] >= self.thr_common:
                     self.feature_100[(word, tag)] = idx
                     idx += 1
         return idx
@@ -259,7 +277,7 @@ class textProcessor:
             for sec_tag in self.tags_set:
                 for thrd_tag in self.tags_set:
                     key = (first_tag, sec_tag, thrd_tag)
-                    if key in self.feature_103_counts and self.feature_103_counts[key] >= self.thr:
+                    if key in self.feature_103_counts and self.feature_103_counts[key] >= self.thr_common:
                         self.feature_103[key] = idx
                         idx += 1
         return idx
@@ -269,7 +287,7 @@ class textProcessor:
         for first_tag in self.tags_set:
             for sec_tag in self.tags_set:
                 key = (first_tag, sec_tag)
-                if key in self.feature_104_counts and self.feature_104_counts[key] >= self.thr:
+                if key in self.feature_104_counts and self.feature_104_counts[key] >= self.thr_common:
                     self.feature_104[key] = idx
                     idx += 1
         return idx
@@ -277,7 +295,7 @@ class textProcessor:
     def fill_feature_105_dictionary(self, start_idx):
         idx = start_idx
         for tag in self.tags_set:
-            if tag in self.feature_105_counts and self.feature_105_counts[tag] >= self.thr:
+            if tag in self.feature_105_counts and self.feature_105_counts[tag] >= self.thr_common:
                 self.feature_105[tag] = idx
                 idx += 1
         return idx
@@ -306,12 +324,29 @@ class textProcessor:
                 idx += 1
         return idx
 
+    def fill_feature_contains_hyphen(self, start_idx):
+        idx = start_idx
+        for tag in self.tags_set:
+            if tag in self.feature_contains_hyphen_counts and self.feature_contains_hyphen_counts[tag] >= self.thr:
+                self.feature_contains_hyphen[tag] = idx
+                idx += 1
+        return idx
+
     def fill_feature_106_dictionary(self, start_idx):
         idx = start_idx
         for word in self.words_set:
             for tag in self.tags_set:
-                if (word, tag) in self.feature_106_counts and self.feature_106_counts[(word, tag)] >= self.thr:
+                if (word, tag) in self.feature_106_counts and self.feature_106_counts[(word, tag)] >= self.thr_common:
                     self.feature_106[(word, tag)] = idx
+                    idx += 1
+        return idx
+
+    def fill_feature_107_dictionary(self, start_idx):
+        idx = start_idx
+        for word in self.words_set:
+            for tag in self.tags_set:
+                if (word, tag) in self.feature_107_counts and self.feature_107_counts[(word, tag)] >= self.thr_common:
+                    self.feature_107[(word, tag)] = idx
                     idx += 1
         return idx
 
@@ -340,8 +375,9 @@ class textProcessor:
             tag = history[2]
             word = history[3]
             prev_word = history[4]
+            next_word = history[5]
             for possible_tag in self.tags_set:
-                possible_history = (t_2, t_1, possible_tag, word, prev_word)
+                possible_history = (t_2, t_1, possible_tag, word, prev_word, next_word)
                 H_tag.append(possible_history)
         return H_tag
 
@@ -356,7 +392,7 @@ class textProcessor:
         tag = history[2]
         word = history[3]
         prev_word = history[4]
-
+        next_word = history[5]
         hot_places = []
         #   f100    (word,tag)
         #print('word: ', word, " tag: ", tag)
@@ -401,10 +437,7 @@ class textProcessor:
         if tag in self.feature_105:
             hot_places.append(self.feature_105[tag])
 
-        if not self.use_extra_features:
-            return
         #   start with capital
-        # print(word, type(word), " len: ", len(word))
         if len(word) > 0 and word[0].isupper() and tag in self.feature_start_cap:
             hot_places.append(self.feature_start_cap[tag])
 
@@ -416,16 +449,24 @@ class textProcessor:
         if (not word.isalpha()) and (tag in self.feature_contains_numbers):
             hot_places.append(self.feature_contains_numbers[tag])
 
+        #   contains hyphen
+        if '_' in word and tag in self.feature_contains_hyphen:
+            hot_places.append(self.feature_contains_hyphen[tag])
+
         #   f106
         if (prev_word, tag) in self.feature_106:
             hot_places.append(self.feature_106[(prev_word, tag)])
 
+        #   f107
+        if (next_word, tag) in self.feature_107:
+            hot_places.append(self.feature_107[(next_word, tag)])
+
         return hot_places
 
-    def generate_h_tag_for_word_roy(self, word,t_2,t_1,prev_word):
+    def generate_h_tag_for_word_roy(self, word,t_2,t_1,prev_word,next_word):
         h_tag = []
-        # history = (t-2,t-1,t,w,prev_word)
+        # history = (t-2,t-1,t,w,prev_word,next_word)
         for t in self.tags_set:
-            history = (t_2, t_1, t, word, prev_word)
+            history = (t_2, t_1, t, word, prev_word,next_word)
             h_tag.append(history)
         return h_tag

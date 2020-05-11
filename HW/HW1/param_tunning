@@ -1,0 +1,32 @@
+testing thr = 3  lambda =  0.1
+beam= 3, use_extra =  True  curr_Acc =  0.94133215703573
+beam= 5, use_extra =  True  curr_Acc =  0.94133215703573
+testing thr = 3  lambda =  0.5
+beam= 3, use_extra =  True  curr_Acc =  0.9430966034406705
+beam= 5, use_extra =  True  curr_Acc =  0.9430966034406705
+testing thr = 3  lambda =  0.9
+beam= 3, use_extra =  True  curr_Acc =  0.9448610498456109
+beam= 5, use_extra =  True  curr_Acc =  0.9448610498456109
+testing thr = 3  lambda =  1
+beam= 3, use_extra =  True  curr_Acc =  0.9453021614468461
+beam= 5, use_extra =  True  curr_Acc =  0.9453021614468461
+testing thr = 3  lambda =  2
+beam= 3, use_extra =  True  curr_Acc =  0.9479488310542568
+beam= 5, use_extra =  True  curr_Acc =  0.9479488310542568
+testing thr = 5  lambda =  0.1
+beam= 3, use_extra =  True  curr_Acc =  0.9338332598147331
+beam= 5, use_extra =  True  curr_Acc =  0.9338332598147331
+testing thr = 5  lambda =  0.5
+beam= 3, use_extra =  True  curr_Acc =  0.9395677106307896
+beam= 5, use_extra =  True  curr_Acc =  0.9395677106307896
+testing thr = 5  lambda =  0.9
+beam= 3, use_extra =  True  curr_Acc =  0.9417732686369652
+beam= 5, use_extra =  True  curr_Acc =  0.9417732686369652
+testing thr = 5  lambda =  1
+beam= 3, use_extra =  True  curr_Acc =  0.94133215703573
+beam= 5, use_extra =  True  curr_Acc =  0.94133215703573
+testing thr = 5  lambda =  2
+beam= 3, use_extra =  True  curr_Acc =  0.940891045434495
+beam= 5, use_extra =  True  curr_Acc =  0.940891045434495
+testing thr = 3  lambda =  10
+beam= 3, use_extra =   curr_Acc =  0.9435377150419056

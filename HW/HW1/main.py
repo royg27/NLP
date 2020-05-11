@@ -31,42 +31,35 @@ def fill_file(file_to_predict, tagged_file_name):
 
 def hyperparameter_tuning():
     num_sentences = 100
-    processor_thr = [3,5,7]
-    model_lambda = [0.1, 0.5, 0.9, 1, 2]
-    use_additional_features = [True, False]
+    processor_thr = [3]
+    model_lambda = [0.1,0.5,2,10]
     max_val = 0
     best_lmbda = -1
     best_thr = -1
-    best_beam = -1
-    best_use_additional = True
     s_val = textProcessor(['data/test1.wtag'])
     s_val.preprocess()
     Y = s_val.tags[0:num_sentences]
-    for use_extra in use_additional_features:
-        for thr in processor_thr:
-            for lmbda in model_lambda:
-                print("testing thr =",thr, " lambda = ", lmbda)
-                s = textProcessor(['data/train1.wtag'],thr=thr, use_extra_features=use_extra)
-                s.preprocess()
-                model = MEMM(s,lamda=lmbda)
-                model.fit(False)
-                y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences, beam=3)
-                cur_acc = model.accuracy(Y, y_pred)
-                if cur_acc > max_val:
-                    best_lmbda = lmbda
-                    best_thr = thr
-                    max_val = cur_acc
-                    best_beam = 3
-                    best_use_additional = use_extra
-                y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences, beam=5)
-                cur_acc = model.accuracy(Y, y_pred)
-                if cur_acc > max_val:
-                    best_lmbda = lmbda
-                    best_thr = thr
-                    max_val = cur_acc
-                    best_beam = 5
-                    best_use_additional = use_extra
-    print("best acc = ",max_val, " thr = ", best_thr, " lambda = ", best_lmbda, " beam = ",best_beam, " use extra = ", best_use_additional)
+    for thr in processor_thr:
+        for lmbda in model_lambda:
+            print("testing thr =",thr, " lambda = ", lmbda)
+            s = textProcessor(['data/train1.wtag'],thr=thr)
+            s.preprocess()
+            model = MEMM(s,lamda=lmbda)
+            t = time.time()
+            model.fit(False)
+            end = time.time()
+            print("fit time = ", (end - t))
+            t = time.time()
+            y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences, beam=3)
+            end = time.time()
+            print("prediction time = ", (end-t))
+            cur_acc = model.accuracy(Y, y_pred)
+            print("cur_acc = ", cur_acc)
+            if cur_acc > max_val:
+                best_lmbda = lmbda
+                best_thr = thr
+                max_val = cur_acc
+    print("best acc = ",max_val, " thr = ", best_thr, " lambda = ", best_lmbda, " use extra = ")
 
 
 def training_part():
@@ -82,37 +75,24 @@ def training_part():
     return
 
 
-def roy():
-    # train processor
-    # s = train_processor()
-    # train model
-    # model = train_model(s)
-    # unit_tests.check_text_processor_basic()
-    # unit_tests.test_model(1)
-    # # predict
-    # s = textProcessor(['data/train1.wtag','data/train2.wtag'],thr=5)
-    model = MEMM(s, lamda=1)
-    model.fit(False)
-    print("predicting")
-    num_sentences_to_tag = 100
-    Y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences_to_tag, beam=3)
-    print("done predicting")
-    s = textProcessor(['data/test1.wtag'], thr=5)
+def generate_confusion_matrix():
+    s = textProcessor(['data/train1.wtag'], thr=3)
     s.preprocess()
-    Y = s.tags
-    acc = model.accuracy(Y[:num_sentences_to_tag], Y_pred)
-    model.confusion_matrix_roy(Y[:num_sentences_to_tag], Y_pred)
-    print("acc = ", acc)
-    # # hyperparameter search
-    # hyperparameter_tuning()
-    #fill_file()
-    return
+    num_sentences_to_tag = 1000
+    model = MEMM(s, lamda=2)
+    model.fit(True)
+    Y_pred = model.predict('data/test1.wtag', num_sentences=num_sentences_to_tag, beam=3)
+    s_val = textProcessor(['data/test1.wtag'], thr=3)
+    s_val.preprocess()
+    Y = s_val.tags[:num_sentences_to_tag]
+    model.confusion_matrix_roy(Y, Y_pred)
 
 
 def main():
     # fill_file()
     hyperparameter_tuning()
     # training_part()
+    # generate_confusion_matrix()
     return
 
 

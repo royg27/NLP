@@ -2,9 +2,9 @@ import numpy as np
 from textProcessor import textProcessor
 from scipy.optimize import fmin_l_bfgs_b
 import re
-#from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-#import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
 import pickle
+import pandas as pd
 
 
 class MEMM:
@@ -65,7 +65,11 @@ class MEMM:
         linear_term = linear_term.sum()
         regularization_term = 0.5 * self.lamda * (np.linalg.norm(w_i)**2)
         f_v = F_tag.dot(w_i)
-        e_f_v = np.exp(f_v)
+        # numeric stability trick
+        F_V_reshaped = f_v.reshape((-1, h_tag_len))
+        F_V_max = F_V_reshaped.max(axis=1)
+        F_V_reshaped -= F_V_max[:, np.newaxis]
+        e_f_v = np.exp(F_V_reshaped)
         # reshape as (-1,tags)
         reshaped_e_f_v = e_f_v.reshape((-1,h_tag_len))
         summed_reshaped = reshaped_e_f_v.sum(axis=1)
@@ -105,49 +109,6 @@ class MEMM:
         with open(weights_path, 'wb') as f:
             pickle.dump(optimal_params, f)
         self.v = optimal_params[0]
-
-    """def confusion_matrix_roy(self, Y, Y_pred):
-        tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
-        labels = self.processor.tags_set
-        y_test = [y for x in Y for y in x]
-        y_pred = [y for x in Y_pred for y in x]
-        conf_mat = confusion_matrix(y_test, y_pred, labels)
-        truncated_conf_mat = conf_mat[tags_to_show, :]
-        print(conf_mat)
-        # make nice graph
-        disp = ConfusionMatrixDisplay(conf_mat, labels)
-        disp = disp.plot(include_values=False ,cmap='viridis', ax=None, xticks_rotation='horizontal')
-        plt.show()"""
-
-    def get_worst_tags_roy(self, Y, Y_pred, num_worst = 10):
-        """
-        :param Y: GT of the tags
-        :param Y_pred: The predicted tags
-        :return: A list of the worst predicted tags
-        """
-        possible_tags = self.processor.tags_set
-        word_acc = dict() # np.zeros(shape=len(possible_tags))
-        for tag in possible_tags:
-            word_acc[tag] = (0, 0)
-
-        for idx_sentence, sentence_tags in enumerate(Y):
-            for idx_word, word_tag in enumerate(sentence_tags):
-                curr_count, curr_right = word_acc[word_tag]
-                if word_tag == Y_pred[idx_sentence][idx_word]:
-                    curr_right += 1
-                curr_count += 1
-                word_acc[word_tag] = (curr_count, curr_right)
-
-        tag_res = np.zeros(shape=len(possible_tags))
-        for idx, tag in enumerate(possible_tags):
-            count, right = word_acc[tag]
-            if count == 0:
-                continue
-            tag_res[idx] = 1 - (right/count)
-
-        worse_tags_idx = np.argsort(tag_res)[:num_worst]
-        print(possible_tags[worse_tags_idx])
-        return worse_tags_idx
 
     def accuracy(self, Y, Y_pred):
         """
@@ -210,6 +171,7 @@ class MEMM:
         relevant_tags_u = []
         for idx, word in enumerate(sentence):
             prev_word = sentence[idx-1] if idx>0 else '*'
+            next_word = sentence[idx+1] if idx+1<len(sentence) else '*'
             if idx==0:
                 relevant_idx_u = [star_idx]
                 relevant_tags_u = ['*']
@@ -222,7 +184,7 @@ class MEMM:
                 v = -np.inf * np.ones(len(tags_list))
                 t_bp = np.zeros(len(tags_list))
                 for t_idx, t in zip(relevant_idx_t, relevant_tags_t):
-                    h_tag = self.processor.generate_h_tag_for_word_roy(word, t, u, prev_word)
+                    h_tag = self.processor.generate_h_tag_for_word_roy(word, t, u, prev_word, next_word)
                     F_tag = self.processor.generate_F(h_tag)
                     q = self.vectorized_softmax(F_tag, self.v, len(tags_list))
                     #   q is for all possible v for given t,u
@@ -258,3 +220,48 @@ class MEMM:
         for t in tags:
             ret_val.append(tags_list[int(t)])
         return ret_val[1:]
+
+    def confusion_matrix_roy(self, Y, Y_pred):
+        tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
+        labels = self.processor.tags_set
+        y_test = [y for x in Y for y in x]
+        y_pred = [y for x in Y_pred for y in x]
+        conf_mat = confusion_matrix(y_test, y_pred, labels)
+        truncated_conf_mat = conf_mat[tags_to_show, :]
+        df = pd.DataFrame(truncated_conf_mat, columns=labels, index=labels[tags_to_show])
+        df.to_html('conf_mat.html')
+        print(conf_mat)
+        ##  make nice graph
+        # disp = ConfusionMatrixDisplay(conf_mat, labels)
+        # disp = disp.plot(include_values=False ,cmap='viridis', ax=None, xticks_rotation='horizontal')
+        # plt.show()
+
+    def get_worst_tags_roy(self, Y, Y_pred, num_worst = 10):
+        """
+        :param Y: GT of the tags
+        :param Y_pred: The predicted tags
+        :return: A list of the worst predicted tags
+        """
+        possible_tags = self.processor.tags_set
+        word_acc = dict() # np.zeros(shape=len(possible_tags))
+        for tag in possible_tags:
+            word_acc[tag] = (0, 0)
+
+        for idx_sentence, sentence_tags in enumerate(Y):
+            for idx_word, word_tag in enumerate(sentence_tags):
+                curr_count, curr_right = word_acc[word_tag]
+                if word_tag == Y_pred[idx_sentence][idx_word]:
+                    curr_right += 1
+                curr_count += 1
+                word_acc[word_tag] = (curr_count, curr_right)
+
+        tag_res = np.zeros(shape=len(possible_tags))
+        for idx, tag in enumerate(possible_tags):
+            count, right = word_acc[tag]
+            if count == 0:
+                continue
+            tag_res[idx] = 1 - (right/count)
+
+        worse_tags_idx = np.argsort(tag_res)[-num_worst:]
+        print(possible_tags[worse_tags_idx])
+        return worse_tags_idx
