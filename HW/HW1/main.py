@@ -7,11 +7,12 @@ hyper_parameters_model1 = {"thr": 3, "thr_2": 7, "lamda": 2}
 hyper_parameters_model2 = {"thr": 3, "thr_2": 5, "lamda": 0.5}
 
 
-def fill_file(train_file_list, file_to_predict, tagged_file_name,hyper_parameters):
+# TODO change so will get weight_file - should have weights for combined train+test for model 1
+def fill_file(train_file_list, file_to_predict, tagged_file_name,hyper_parameters, weight_file, load_weights=False):
     s = textProcessor(train_file_list, thr=hyper_parameters["thr"], thr_2=hyper_parameters["thr_2"])
     s.preprocess()
     model = MEMM(s, lamda=hyper_parameters["lamda"], sigma=0.001)
-    model.fit(False)
+    model.fit(load_weights, weights_path=weight_file)
     predict_file = file_to_predict
     model.generate_predicted_file(predict_file, tagged_file_name, beam=3)
 
@@ -52,7 +53,7 @@ def hyperparameter_tuning():
     hyper_parameters_model1["lamda"] = best_lmbda
 
 
-def training_part(hyper_params, train_file_list,load_weights=False):
+def training_part(hyper_params, train_file_list, weight_file, load_weights=False):
     print("training...")
     processor = textProcessor(train_file_list, thr=hyper_params["thr"], thr_2=hyper_params["thr_2"])
     processor.preprocess()
@@ -69,7 +70,7 @@ def training_part(hyper_params, train_file_list,load_weights=False):
     print("|f_contains_hyphen| = ", len(processor.feature_contains_hyphen))
     model = MEMM(processor,lamda=hyper_params["lamda"])
     start = time.time()
-    model.fit(load_weights)
+    model.fit(load_weights,weights_path=weight_file)
     end = time.time()
     print("training time = ", end - start)
     return model
@@ -163,17 +164,19 @@ def main():
     # hyper_parameter_tuning_model2()
     # model 1:
     print("model 1: ")
-    trained_model1 = training_part(hyper_parameters_model1, ['data/train1.wtag'], load_weights=False)
+    trained_model1 = training_part(hyper_parameters_model1, ['data/train1.wtag'], weight_file='model1_weights', load_weights=False)
     Y, y_pred = inference(trained_model1)
     generate_confusion_matrix(Y, y_pred)
     # TODO think if using both texts to generate comp1 tags makes sense
-    fill_file(['data/train1.wtag', 'data/test1.wtag'], 'data/comp1.words', 'data/comp_m1_204506349.wtag', hyper_parameters_model1)
+    fill_file(['data/train1.wtag'], 'data/comp1.words', 'data/comp_m1_204506349.wtag',
+              hyper_parameters_model1, load_weights=True, weight_file='model1_weights')
 
     print("model 2: ")
     print("k-folds cross validation on model2 : ")
     print("estimated accuracy : ", k_folds_cross_validation_train2(**hyper_parameters_model2))
-    trained_model2 = training_part(hyper_parameters_model2, ['data/train2.wtag'], load_weights=False)
-    fill_file(['data/train2.wtag'], 'data/comp2.words', 'data/comp_m2_204506349.wtag', hyper_parameters_model2)
+    trained_model2 = training_part(hyper_parameters_model2, ['data/train2.wtag'], weight_file='model2_weights', load_weights=False)
+    fill_file(['data/train2.wtag'], 'data/comp2.words', 'data/comp_m2_204506349.wtag', hyper_parameters_model2,
+              load_weights=True, weight_file='model2_weights')
     return
 
 
