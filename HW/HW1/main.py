@@ -7,10 +7,10 @@ hyper_parameters_model1 = {"thr": 3, "thr_2": 7, "lamda": 2}
 hyper_parameters_model2 = {"thr": 3, "thr_2": 5, "lamda": 0.5}
 
 
-def fill_file(train_file, file_to_predict, tagged_file_name):
-    s = textProcessor([train_file], thr=5)
+def fill_file(train_file_list, file_to_predict, tagged_file_name,hyper_parameters):
+    s = textProcessor(train_file_list, thr=hyper_parameters["thr"], thr_2=hyper_parameters["thr_2"])
     s.preprocess()
-    model = MEMM(s, lamda=1, sigma=0.001)
+    model = MEMM(s, lamda=hyper_parameters["lamda"], sigma=0.001)
     model.fit(False)
     predict_file = file_to_predict
     model.generate_predicted_file(predict_file, tagged_file_name, beam=3)
@@ -47,11 +47,14 @@ def hyperparameter_tuning():
                 best_thr = thr
                 max_val = cur_acc
     print("best acc = ",max_val, " thr = ", best_thr, " lambda = ", best_lmbda, " use extra = ")
+    hyper_parameters_model1["thr"] = best_thr[0]
+    hyper_parameters_model1["thr_2"] = best_thr[1]
+    hyper_parameters_model1["lamda"] = best_lmbda
 
 
-def training_part(hyper_params, train_file,load_weights=False):
+def training_part(hyper_params, train_file_list,load_weights=False):
     print("training...")
-    processor = textProcessor([train_file], thr=hyper_params["thr"], thr_2=hyper_params["thr_2"])
+    processor = textProcessor(train_file_list, thr=hyper_params["thr"], thr_2=hyper_params["thr_2"])
     processor.preprocess()
     print("|f100| = ", len(processor.feature_100))
     print("|f101| = ", len(processor.feature_101))
@@ -148,15 +151,29 @@ def hyper_parameter_tuning_model2():
                 best_lamda = lamda
                 best_acc = acc
     print("best acc = ", best_acc, "params = ", best_thr, " ", best_thr_2, " ", best_lamda)
+    hyper_parameters_model2["thr"] = best_thr
+    hyper_parameters_model2["thr_2"] = best_thr_2
+    hyper_parameters_model2["lamda"] = best_lamda
 
 
 
 def main():
+    # hyper-parameters_tunning
     # hyperparameter_tuning()
     # hyper_parameter_tuning_model2()
-    trained_model1 = training_part(hyper_parameters_model1, 'data/train1.wtag',load_weights=False)
+    # model 1:
+    print("model 1: ")
+    trained_model1 = training_part(hyper_parameters_model1, ['data/train1.wtag'], load_weights=False)
     Y, y_pred = inference(trained_model1)
     generate_confusion_matrix(Y, y_pred)
+    # TODO think if using both texts to generate comp1 tags makes sense
+    fill_file(['data/train1.wtag', 'data/test1.wtag'], 'data/comp1.words', 'data/comp_m1_204506349.wtag', hyper_parameters_model1)
+
+    print("model 2: ")
+    print("k-folds cross validation on model2 : ")
+    print("estimated accuracy : ", k_folds_cross_validation_train2(**hyper_parameters_model2))
+    trained_model2 = training_part(hyper_parameters_model2, ['data/train2.wtag'], load_weights=False)
+    fill_file(['data/train2.wtag'], 'data/comp2.words', 'data/comp_m2_204506349.wtag', hyper_parameters_model2)
     return
 
 

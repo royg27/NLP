@@ -2,9 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7d6faaa1-9ae3-47cc-a802-906352dc6bf9" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/conf_mat.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/comp_m1_204506349.wtag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/comp_m2_204506349.wtag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/train2_1.wtag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/train2_2.wtag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/train2_3.wtag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/train2_4.wtag" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/data/train2_5.wtag" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/trained_weights" beforeDir="false" afterPath="$PROJECT_DIR$/trained_weights" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -165,7 +172,14 @@
       <option name="project" value="LOCAL" />
       <updated>1589228751409</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="massive reduce of viterbi's run time">
+      <created>1589268293195</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1589268293195</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -185,37 +199,38 @@
     <MESSAGE value="file_tagger corrected" />
     <MESSAGE value="most updated" />
     <MESSAGE value="model1 and 2" />
-    <option name="LAST_COMMIT_MESSAGE" value="model1 and 2" />
+    <MESSAGE value="massive reduce of viterbi's run time" />
+    <option name="LAST_COMMIT_MESSAGE" value="massive reduce of viterbi's run time" />
   </component>
   <component name="WindowStateProjectService">
     <state x="512" y="215" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1589117929845">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="512" y="215" key="#com.intellij.fileTypes.FileTypeChooser/0.0.1536.824@0.0.1536.824" timestamp="1589117929845" />
-    <state x="424" y="7" key="CommitChangelistDialog2" timestamp="1589228750080">
+    <state x="424" y="7" key="CommitChangelistDialog2" timestamp="1589268292291">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="424" y="7" key="CommitChangelistDialog2/0.0.1536.824@0.0.1536.824" timestamp="1589228750080" />
+    <state x="424" y="7" key="CommitChangelistDialog2/0.0.1536.824@0.0.1536.824" timestamp="1589268292291" />
     <state x="93" y="93" width="1350" height="638" key="DiffContextDialog" timestamp="1589033790243">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="93" y="93" width="1350" height="638" key="DiffContextDialog/0.0.1536.824@0.0.1536.824" timestamp="1589033790243" />
-    <state width="1515" height="311" key="GridCell.Tab.0.bottom" timestamp="1589267902811">
+    <state width="1515" height="311" key="GridCell.Tab.0.bottom" timestamp="1589274517052">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1589267902811" />
-    <state width="1515" height="311" key="GridCell.Tab.0.center" timestamp="1589267902811">
+    <state width="1515" height="311" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1589274517052" />
+    <state width="1515" height="311" key="GridCell.Tab.0.center" timestamp="1589274517051">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1589267902811" />
-    <state width="1515" height="311" key="GridCell.Tab.0.left" timestamp="1589267902811">
+    <state width="1515" height="311" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1589274517051" />
+    <state width="1515" height="311" key="GridCell.Tab.0.left" timestamp="1589274517051">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1589267902811" />
-    <state width="1515" height="311" key="GridCell.Tab.0.right" timestamp="1589267902811">
+    <state width="1515" height="311" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1589274517051" />
+    <state width="1515" height="311" key="GridCell.Tab.0.right" timestamp="1589274517052">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1589267902811" />
+    <state width="1515" height="311" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1589274517052" />
     <state width="1515" height="250" key="GridCell.Tab.1.bottom" timestamp="1589231014625">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -240,10 +255,10 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="277" y="55" key="SettingsEditor/0.0.1536.824@0.0.1536.824" timestamp="1589033373213" />
-    <state x="361" y="145" key="Vcs.Push.Dialog.v2" timestamp="1589228775872">
+    <state x="361" y="145" key="Vcs.Push.Dialog.v2" timestamp="1589268369513">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="361" y="145" key="Vcs.Push.Dialog.v2/0.0.1536.824@0.0.1536.824" timestamp="1589228775872" />
+    <state x="361" y="145" key="Vcs.Push.Dialog.v2/0.0.1536.824@0.0.1536.824" timestamp="1589268369513" />
     <state width="775" height="419" key="XDebugger.FullValuePopup" timestamp="1589136078930">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -252,10 +267,10 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="118" y="146" width="1350" height="638" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1536.824@0.0.1536.824" timestamp="1589226244492" />
-    <state x="465" y="236" key="com.intellij.ide.util.TipDialog" timestamp="1589267073752">
+    <state x="465" y="236" key="com.intellij.ide.util.TipDialog" timestamp="1589268602587">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="465" y="236" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1589267073752" />
+    <state x="465" y="236" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1589268602587" />
     <state x="578" y="329" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1589188507243">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
