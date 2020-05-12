@@ -6,20 +6,6 @@ import unit_tests
 hyper_parameters_model1 = {"thr": 3, "thr_2": 7, "lamda": 2}
 hyper_parameters_model2 = {"thr": 3, "thr_2": 5, "lamda": 0.5}
 
-def train_processor():
-    s = textProcessor(['data/train1.wtag'])
-    s.preprocess()
-    return s
-
-
-def train_model(s : textProcessor):
-    model = MEMM(s)
-    start = time.time()
-    model.fit(False)
-    end = time.time()
-    print("training time = ",end-start)
-    return model
-
 
 def fill_file(train_file, file_to_predict, tagged_file_name):
     s = textProcessor([train_file], thr=5)
@@ -63,7 +49,7 @@ def hyperparameter_tuning():
     print("best acc = ",max_val, " thr = ", best_thr, " lambda = ", best_lmbda, " use extra = ")
 
 
-def training_part(hyper_params, train_file):
+def training_part(hyper_params, train_file,load_weights=False):
     print("training...")
     processor = textProcessor([train_file], thr=hyper_params["thr"], thr_2=hyper_params["thr_2"])
     processor.preprocess()
@@ -80,7 +66,7 @@ def training_part(hyper_params, train_file):
     print("|f_contains_hyphen| = ", len(processor.feature_contains_hyphen))
     model = MEMM(processor,lamda=hyper_params["lamda"])
     start = time.time()
-    model.fit(False)
+    model.fit(load_weights)
     end = time.time()
     print("training time = ", end - start)
     return model
@@ -103,6 +89,7 @@ def generate_confusion_matrix(Y=None,Y_pred=None):
         model.confusion_matrix_roy(Y, Y_pred)
     else:
         s = textProcessor(['data/train1.wtag'], thr=hyper_parameters_model1["thr"], thr_2=hyper_parameters_model1["thr_2"])
+        s.preprocess()
         model = MEMM(s, lamda=hyper_parameters_model1["lamda"])
         model.fit(load_weights=True)
         model.confusion_matrix_roy(Y, Y_pred)
@@ -165,11 +152,11 @@ def hyper_parameter_tuning_model2():
 
 
 def main():
-    hyperparameter_tuning()
+    # hyperparameter_tuning()
     # hyper_parameter_tuning_model2()
-    # trained_model1 = training_part(hyper_parameters_model1, 'data/train1.wtag')
-    # Y, y_pred = inference(trained_model1)
-    # generate_confusion_matrix(Y, y_pred)
+    trained_model1 = training_part(hyper_parameters_model1, 'data/train1.wtag',load_weights=False)
+    Y, y_pred = inference(trained_model1)
+    generate_confusion_matrix(Y, y_pred)
     return
 
 

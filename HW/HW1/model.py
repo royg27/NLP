@@ -156,7 +156,7 @@ class MEMM:
     def viterbi(self, sentence=['In', 'other', 'words', ',', 'it', 'was'], beam=3):
         pi = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
         bp = np.zeros((len(sentence) + 1, len(self.processor.tags_set), len(self.processor.tags_set)))
-        #   init pi(0),bp(0
+        #   init pi(0),bp(0)
         star_idx = np.where(self.processor.tags_set == '*')[0][0]
         pi[0, star_idx, star_idx] = 1
         bp[0,star_idx,star_idx] = star_idx
@@ -173,9 +173,9 @@ class MEMM:
                 relevant_tags_u = ['*']
                 relevant_idx_t = [star_idx]
                 relevant_tags_t = ['*']
-            else:
-                relevant_idx_t = np.arange(len(self.processor.tags_set))
-                relevant_tags_t = tags_list
+            # else:
+            #     relevant_idx_t = np.arange(len(self.processor.tags_set))
+            #     relevant_tags_t = tags_list
             for u_idx, u in zip(relevant_idx_u, relevant_tags_u):
                 v = -np.inf * np.ones(len(tags_list))
                 t_bp = np.zeros(len(tags_list))
@@ -194,6 +194,10 @@ class MEMM:
                 bp[idx+1,u_idx,:] = t_bp
             #   beam search
             pi_col_max = np.max(pi[idx + 1, :, :],axis=0)
+            #   save prev relevant u as t
+            relevant_idx_t = relevant_idx_u
+            relevant_tags_t = relevant_tags_u
+            #
             relevant_idx_u = np.argsort(pi_col_max)[-beam:]
             relevant_tags_u = self.processor.tags_set[relevant_idx_u]
             #
