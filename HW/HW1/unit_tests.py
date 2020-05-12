@@ -5,6 +5,7 @@ import numpy as np
 from numpy import loadtxt
 from numpy.random import randint
 
+
 def check_text_processor_basic():
     #full of assert, should just finish running
     s = textProcessor('data/train1.wtag')
