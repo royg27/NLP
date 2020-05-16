@@ -3,13 +3,15 @@
   <component name="ChangeListManager">
     <list default="true" id="7d6faaa1-9ae3-47cc-a802-906352dc6bf9" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HW1_report.docx" beforeDir="false" afterPath="$PROJECT_DIR$/HW1_report.docx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/conf_mat.html" beforeDir="false" afterPath="$PROJECT_DIR$/conf_mat.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/comp_m1_204506349.wtag" beforeDir="false" afterPath="$PROJECT_DIR$/data/comp_m1_204506349.wtag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/comp_m2_204506349.wtag" beforeDir="false" afterPath="$PROJECT_DIR$/data/comp_m2_204506349.wtag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/generate_comp_tagged.py" beforeDir="false" afterPath="$PROJECT_DIR$/generate_comp_tagged.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model1_weights" beforeDir="false" afterPath="$PROJECT_DIR$/model1_weights" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model2_weights" beforeDir="false" afterPath="$PROJECT_DIR$/model2_weights" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/trained_weights" beforeDir="false" afterPath="$PROJECT_DIR$/trained_weights" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/unit_tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/unit_tests.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +45,7 @@
       <recent name="C:\Roy's studies\NLP\HW\HW1\data" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.generate_comp_tagged">
+  <component name="RunManager" selected="Python.main">
     <configuration name="generate_comp_tagged" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="HW1" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -151,8 +153,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.generate_comp_tagged" />
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.generate_comp_tagged" />
         <item itemvalue="Python.model" />
         <item itemvalue="Python.textProcessor" />
         <item itemvalue="Python.sentence" />
@@ -258,22 +260,22 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="93" y="93" width="1350" height="638" key="DiffContextDialog/0.0.1536.824@0.0.1536.824" timestamp="1589033790243" />
-    <state width="1515" height="311" key="GridCell.Tab.0.bottom" timestamp="1589300716889">
+    <state width="1515" height="235" key="GridCell.Tab.0.bottom" timestamp="1589623764383">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1589300716889" />
-    <state width="1515" height="311" key="GridCell.Tab.0.center" timestamp="1589300716888">
+    <state width="1515" height="235" key="GridCell.Tab.0.bottom/0.0.1536.824@0.0.1536.824" timestamp="1589623764383" />
+    <state width="1515" height="235" key="GridCell.Tab.0.center" timestamp="1589623764383">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1589300716888" />
-    <state width="1515" height="311" key="GridCell.Tab.0.left" timestamp="1589300716886">
+    <state width="1515" height="235" key="GridCell.Tab.0.center/0.0.1536.824@0.0.1536.824" timestamp="1589623764383" />
+    <state width="1515" height="235" key="GridCell.Tab.0.left" timestamp="1589623764383">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1589300716886" />
-    <state width="1515" height="311" key="GridCell.Tab.0.right" timestamp="1589300716888">
+    <state width="1515" height="235" key="GridCell.Tab.0.left/0.0.1536.824@0.0.1536.824" timestamp="1589623764383" />
+    <state width="1515" height="235" key="GridCell.Tab.0.right" timestamp="1589623764383">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="1515" height="311" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1589300716888" />
+    <state width="1515" height="235" key="GridCell.Tab.0.right/0.0.1536.824@0.0.1536.824" timestamp="1589623764383" />
     <state width="1515" height="250" key="GridCell.Tab.1.bottom" timestamp="1589231014625">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -306,14 +308,14 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state width="775" height="419" key="XDebugger.FullValuePopup/0.0.1536.824@0.0.1536.824" timestamp="1589136078930" />
-    <state x="118" y="146" width="1350" height="638" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1589226244492">
+    <state x="118" y="146" width="1350" height="638" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1589529704010">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="118" y="146" width="1350" height="638" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1536.824@0.0.1536.824" timestamp="1589226244492" />
-    <state x="465" y="236" key="com.intellij.ide.util.TipDialog" timestamp="1589268602587">
+    <state x="118" y="146" width="1350" height="638" maximized="true" key="com.intellij.history.integration.ui.views.FileHistoryDialog/0.0.1536.824@0.0.1536.824" timestamp="1589529704010" />
+    <state x="465" y="236" key="com.intellij.ide.util.TipDialog" timestamp="1589623794124">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="465" y="236" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1589268602587" />
+    <state x="465" y="236" key="com.intellij.ide.util.TipDialog/0.0.1536.824@0.0.1536.824" timestamp="1589623794124" />
     <state x="578" y="329" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1589188507243">
       <screen x="0" y="0" width="1536" height="824" />
     </state>

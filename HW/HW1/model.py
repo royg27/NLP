@@ -2,7 +2,7 @@ import numpy as np
 from textProcessor import textProcessor
 from scipy.optimize import fmin_l_bfgs_b
 import re
-from sklearn.metrics import confusion_matrix
+# from sklearn.metrics import confusion_matrix
 import pickle
 import pandas as pd
 
@@ -101,7 +101,7 @@ class MEMM:
         empirical_counts = F.sum(axis=0)
         args = (empirical_counts, F_tag, F, len(self.processor.tags_set))
         w_0 = np.zeros(self.processor.f_length, dtype=np.float64)
-        optimal_params=fmin_l_bfgs_b(func=self.calc_objective_per_iter, x0=w_0, args=args, maxiter=1000, iprint=0)
+        optimal_params=fmin_l_bfgs_b(func=self.calc_objective_per_iter, x0=w_0, args=args, maxiter=2000, iprint=0)
         with open(weights_path, 'wb') as f:
             pickle.dump(optimal_params, f)
         self.v = optimal_params[0]
@@ -221,20 +221,16 @@ class MEMM:
             ret_val.append(tags_list[int(t)])
         return ret_val[1:]
 
-    def confusion_matrix_roy(self, Y, Y_pred):
-        tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
-        labels = self.processor.tags_set
-        y_test = [y for x in Y for y in x]
-        y_pred = [y for x in Y_pred for y in x]
-        conf_mat = confusion_matrix(y_test, y_pred, labels)
-        truncated_conf_mat = conf_mat[tags_to_show, :]
-        df = pd.DataFrame(truncated_conf_mat, columns=labels, index=labels[tags_to_show])
-        df.to_html('conf_mat.html')
-        print(conf_mat)
-        ##  make nice graph
-        # disp = ConfusionMatrixDisplay(conf_mat, labels)
-        # disp = disp.plot(include_values=False ,cmap='viridis', ax=None, xticks_rotation='horizontal')
-        # plt.show()
+    # def confusion_matrix_roy(self, Y, Y_pred):
+    #     tags_to_show = self.get_worst_tags_roy(Y, Y_pred)
+    #     labels = self.processor.tags_set
+    #     y_test = [y for x in Y for y in x]
+    #     y_pred = [y for x in Y_pred for y in x]
+    #     conf_mat = confusion_matrix(y_test, y_pred, labels)
+    #     truncated_conf_mat = conf_mat[tags_to_show, :]
+    #     df = pd.DataFrame(truncated_conf_mat, columns=labels, index=labels[tags_to_show])
+    #     df.to_html('conf_mat.html')
+    #     print(conf_mat)
 
     def get_worst_tags_roy(self, Y, Y_pred, num_worst = 10):
         """

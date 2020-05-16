@@ -1,13 +1,10 @@
 from textProcessor import textProcessor
 from model import MEMM
 import time
-import numpy as np
-import unit_tests
 hyper_parameters_model1 = {"thr": 3, "thr_2": 7, "lamda": 2}
 hyper_parameters_model2 = {"thr": 3, "thr_2": 5, "lamda": 0.5}
 
 
-# TODO change so will get weight_file - should have weights for combined train+test for model 1
 def fill_file(train_file_list, file_to_predict, tagged_file_name,hyper_parameters, weight_file, load_weights=False):
     s = textProcessor(train_file_list, thr=hyper_parameters["thr"], thr_2=hyper_parameters["thr_2"])
     s.preprocess()
@@ -99,7 +96,6 @@ def generate_confusion_matrix(Y=None,Y_pred=None):
         model.confusion_matrix_roy(Y, Y_pred)
 
 
-
 def k_folds_cross_validation_train2(thr=3,thr_2=7,lamda=2):
     files = ['data/train2_1.wtag','data/train2_2.wtag','data/train2_3.wtag','data/train2_4.wtag','data/train2_5.wtag']
     cur_acc = 0
@@ -166,8 +162,7 @@ def main():
     print("model 1: ")
     trained_model1 = training_part(hyper_parameters_model1, ['data/train1.wtag'], weight_file='model1_weights', load_weights=False)
     Y, y_pred = inference(trained_model1)
-    generate_confusion_matrix(Y, y_pred)
-    # TODO think if using both texts to generate comp1 tags makes sense
+    # generate_confusion_matrix(Y, y_pred)
     fill_file(['data/train1.wtag'], 'data/comp1.words', 'data/comp_m1_204506349.wtag',
               hyper_parameters_model1, load_weights=True, weight_file='model1_weights')
 
