@@ -1,5 +1,5 @@
 from collections import defaultdict
-from torchtext.vocab import Vocab
+#from torchtext.vocab import Vocab
 from torch.utils.data.dataset import Dataset, TensorDataset
 from pathlib import Path
 from collections import Counter
