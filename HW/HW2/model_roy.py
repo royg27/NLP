@@ -13,6 +13,7 @@ import random
 from torch.utils.data.dataloader import DataLoader
 from utils import *
 import matplotlib.pyplot as plt
+from chu_liu_edmonds import *
 
 
 class DnnDependencyParser(nn.Module):
@@ -78,6 +79,15 @@ def NLLL(output, target):
     return final_loss
 
 
+def get_acc_measurements(GT, energy_table):
+    predicted_mst, _ = decode_mst(energy=energy_table, length=energy_table.shape[0], has_labels=False)
+    y_pred = torch.from_numpy(predicted_mst[1:])
+    y_true = GT[1:]
+    print("y_pred", y_pred)
+    print("y_true = ", y_true)
+    print((y_pred == y_true).sum())
+    acc = (y_pred == y_true).sum()/float(y_true.shape[0])
+    return acc.item()
 
 
 def main():
@@ -137,16 +147,20 @@ def main():
             i += 1
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
             model_output = model(words_idx_tensor, pos_idx_tensor, heads_tensor)
+            acc = get_acc_measurements(GT=heads_tensor[0], energy_table=model_output)
+            accuracy_list.append(acc)
             loss = NLLL(model_output, heads_tensor)
             loss = loss / accumulate_grad_steps
             loss_list.append(loss)
             if i % accumulate_grad_steps == 0:
                 optimizer.step()
                 optimizer.zero_grad()
-    plt.figure()
-    plt.plot(loss_list)
-    print(loss_list)
-    
+
+    print("loss_list", loss_list)
+    print("accuracy_list", accuracy_list)
+
+
+
     return
 
 
