@@ -28,26 +28,26 @@ use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 
 
-class not_efficientMLP(nn.Module):
-    def __init__(self, lstm_dim, mlp_hidden_dim):
-        super(not_efficientMLP, self).__init__()
-        self.first_linear = nn.Linear(2 * lstm_dim, mlp_hidden_dim)
-        self.non_linearity = nn.ReLU()
-        self.second_mlp = nn.Linear(mlp_hidden_dim, 1, bias=True)  # will output a score of a pair
-
-    def forward(self, lstm_out):
-        sentence_length = lstm_out.shape[0]
-        scores = torch.zeros(size=(sentence_length, sentence_length)).to(device)
-        for i, v_i in enumerate(lstm_out):
-            for j, v_j in enumerate(lstm_out):
-                if i == j:
-                    scores[i, j] = 0
-                else:
-                    a = torch.cat((v_i, v_j), dim=0)
-                    x = self.first_linear(a)
-                    y = self.non_linearity(x)
-                    scores[i, j] = self.second_mlp(y)
-        return scores
+# class not_efficientMLP(nn.Module):
+#     def __init__(self, lstm_dim, mlp_hidden_dim):
+#         super(not_efficientMLP, self).__init__()
+#         self.first_linear = nn.Linear(2 * lstm_dim, mlp_hidden_dim)
+#         self.non_linearity = nn.ReLU()
+#         self.second_mlp = nn.Linear(mlp_hidden_dim, 1, bias=True)  # will output a score of a pair
+#
+#     def forward(self, lstm_out):
+#         sentence_length = lstm_out.shape[0]
+#         scores = torch.zeros(size=(sentence_length, sentence_length)).to(device)
+#         for i, v_i in enumerate(lstm_out):
+#             for j, v_j in enumerate(lstm_out):
+#                 if i == j:
+#                     scores[i, j] = 0
+#                 else:
+#                     a = torch.cat((v_i, v_j), dim=0)
+#                     x = self.first_linear(a)
+#                     y = self.non_linearity(x)
+#                     scores[i, j] = self.second_mlp(y)
+#         return scores
 
 class SplittedMLP(nn.Module):
     def __init__(self, lstm_dim, mlp_hidden_dim):
@@ -127,38 +127,38 @@ def NLLL_function(scores, true_tree):
     return (1.0/sentence_length) * loss
 
 
-def NLLL(output, target):
-    """
-    :param output: The table of MLP scores of each word pair
-    :param target: The ground truth of the actual arcs
-    :return:
-    """
-    # loss = -1/|Y|*[S_gt - sum(log(sum(exp(s_j_m))))]
-    S_gt = 0
-    mod_score = 0
-    for idx, head in enumerate(target[0]):
-        if idx == 0:
-            continue
-        head_idx = head.item()
-        mod_idx = idx
-        S_gt += output[head_idx, mod_idx]
-        #
-        S_j_m = output[:, mod_idx]
-        mod_score += torch.log(torch.sum(torch.exp(S_j_m)))
-    Y_i = target[0].shape[0]
-    final_loss = (-1./Y_i)*(S_gt - mod_score)
-    return final_loss
-
-
-def get_acc_measurements(GT, energy_table):
-    predicted_mst, _ = decode_mst(energy=energy_table, length=energy_table.shape[0], has_labels=False)
-    y_pred = torch.from_numpy(predicted_mst[1:])
-    y_true = GT[1:]
-    print("y_pred", y_pred)
-    print("y_true = ", y_true)
-    print((y_pred == y_true).sum())
-    acc = (y_pred == y_true).sum()/float(y_true.shape[0])
-    return acc.item()
+# def NLLL(output, target):
+#     """
+#     :param output: The table of MLP scores of each word pair
+#     :param target: The ground truth of the actual arcs
+#     :return:
+#     """
+#     # loss = -1/|Y|*[S_gt - sum(log(sum(exp(s_j_m))))]
+#     S_gt = 0
+#     mod_score = 0
+#     for idx, head in enumerate(target[0]):
+#         if idx == 0:
+#             continue
+#         head_idx = head.item()
+#         mod_idx = idx
+#         S_gt += output[head_idx, mod_idx]
+#         #
+#         S_j_m = output[:, mod_idx]
+#         mod_score += torch.log(torch.sum(torch.exp(S_j_m)))
+#     Y_i = target[0].shape[0]
+#     final_loss = (-1./Y_i)*(S_gt - mod_score)
+#     return final_loss
+#
+#
+# def get_acc_measurements(GT, energy_table):
+#     predicted_mst, _ = decode_mst(energy=energy_table, length=energy_table.shape[0], has_labels=False)
+#     y_pred = torch.from_numpy(predicted_mst[1:])
+#     y_true = GT[1:]
+#     print("y_pred", y_pred)
+#     print("y_true = ", y_true)
+#     print((y_pred == y_true).sum())
+#     acc = (y_pred == y_true).sum()/float(y_true.shape[0])
+#     return acc.item()
 
 
 def accuracy(ground_truth, energy_table):
@@ -206,7 +206,7 @@ def main():
     loss_function = nn.NLLLoss()
 
     # We will be using a simple SGD optimizer to minimize the loss function
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     acumulate_grad_steps = 128  # This is the actual batch_size, while we officially use batch_size=1
 
     # Training start
