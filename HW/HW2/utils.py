@@ -164,7 +164,7 @@ class PosDataset(Dataset):
             # add root
             words_idx_list.append(self.root_idx)
             pos_idx_list.append(self.pos_idx_mappings.get(ROOT_TOKEN))
-            head_idx_list.append(0)
+            head_idx_list.append(-1)    # align with chu-liu edmonds output
             for word, pos, head_token in sentence:
                 if word not in self.word2idx:
                     words_idx_list.append(self.unknown_idx)
