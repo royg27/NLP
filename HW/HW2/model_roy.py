@@ -15,7 +15,7 @@ from utils import *
 import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
 
-MLP_HIDDEN_DIM = 100
+MLP_HIDDEN_DIM = 50
 EPOCHS = 15
 WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
@@ -56,7 +56,7 @@ class MLP(nn.Module):
             summed_values = mod_hidden + heads_hidden   # a single mod with all heads possibilities
             x = self.non_linearity(summed_values)
             scores[:, mod] = torch.flatten(self.second_mlp(x))
-            scores[mod, mod] = 0    # a word cant be its head
+            scores[mod, mod] = -np.inf    # a word cant be its head
         return scores
 
 
@@ -114,9 +114,7 @@ def NLLL_function(scores, true_tree):
     sentence_length = clean_scores.shape[1]     # without root
     loss = 0
     for mod in range(sentence_length):
-        # print(scores[:,mod].unsqueeze(dim=0).shape)
-        # print(clean_true_tree[mod:mod+1])
-        loss += cross_entropy_loss(scores[:, mod].unsqueeze(dim=0), clean_true_tree[mod:mod+1])
+        loss += cross_entropy_loss(clean_scores[:, mod].unsqueeze(dim=0), clean_true_tree[mod:mod+1])
     return loss
 
 
@@ -191,8 +189,6 @@ def main():
     word_vocab_size = len(train.word2idx)
     tag_vocab_size = len(train.pos_idx_mappings)
 
-    
-    
     model = DnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size, tag_vocab_size).to(device)
     if use_cuda:
         model.cuda()
