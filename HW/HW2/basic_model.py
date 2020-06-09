@@ -15,7 +15,7 @@ from utils import *
 import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
 
-MLP_HIDDEN_DIM = 50
+MLP_HIDDEN_DIM = 100  # 50
 EPOCHS = 15
 WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
@@ -124,7 +124,7 @@ def NLLL_function(scores, true_tree):
     loss = 0
     for mod in range(sentence_length):
         loss += cross_entropy_loss(clean_scores[:, mod].unsqueeze(dim=0), clean_true_tree[mod:mod+1])
-    return loss
+    return (1.0/sentence_length) * loss
 
 
 def NLLL(output, target):
@@ -209,7 +209,7 @@ def main():
 
     # We will be using a simple SGD optimizer to minimize the loss function
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    acumulate_grad_steps = 50  # This is the actual batch_size, while we officially use batch_size=1
+    acumulate_grad_steps = 128  # This is the actual batch_size, while we officially use batch_size=1
 
     # Training start
     print("Training Started")
