@@ -27,6 +27,28 @@ cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 
+
+class not_efficientMLP(nn.Module):
+    def __init__(self, lstm_dim, mlp_hidden_dim):
+        super(not_efficientMLP, self).__init__()
+        self.first_linear = nn.Linear(2 * lstm_dim, mlp_hidden_dim)
+        self.non_linearity = nn.ReLU()
+        self.second_mlp = nn.Linear(mlp_hidden_dim, 1, bias=True)  # will output a score of a pair
+
+    def forward(self, lstm_out):
+        sentence_length = lstm_out.shape[0]
+        scores = torch.zeros(size=(sentence_length, sentence_length)).to(device)
+        for i, v_i in enumerate(lstm_out):
+            for j, v_j in enumerate(lstm_out):
+                if i == j:
+                    scores[i, j] = 0
+                else:
+                    a = torch.cat((v_i, v_j), dim=0)
+                    x = self.first_linear(a)
+                    y = self.non_linearity(x)
+                    scores[i, j] = self.second_mlp(y)
+        return scores
+
 class SplittedMLP(nn.Module):
     def __init__(self, lstm_dim, mlp_hidden_dim):
         super(SplittedMLP, self).__init__()
@@ -70,22 +92,8 @@ class DnnDependencyParser(nn.Module):
         self.pos_embedding = nn.Embedding(tag_vocab_size, pos_embedding_dim)
         self.lstm = nn.LSTM(input_size=word_embedding_dim + pos_embedding_dim, hidden_size=hidden_dim, num_layers=2,
                             bidirectional=True, batch_first=False)
-        self.mlp = MLP(2*hidden_dim, MLP_HIDDEN_DIM)
-
-    # def create_table(self, post_lstm_embedding):
-    #     # post_lstm_embedding.shape -> sentence_length, V_size
-    #     sentence_length = post_lstm_embedding.shape[0]
-    #     table = torch.zeros(size=(sentence_length, sentence_length))
-    #     mlp_heads = []
-    #     mlp_mods = []
-    #     for i in range(sentence_length):
-    #         mlp_heads.append(self.MLP_head(post_lstm_embedding[i]).item())
-    #         mlp_mods.append(self.MLP_modifier(post_lstm_embedding[i]).item())
-    #     # construct table
-    #     for h in range(sentence_length):
-    #         for m in range(sentence_length):
-    #             table[h, m] = mlp_heads[h] + mlp_mods[m]
-    #     return table
+        #self.mlp = MLP(2*hidden_dim, MLP_HIDDEN_DIM)
+        self.mlp = not_efficientMLP(2*hidden_dim, MLP_HIDDEN_DIM)
 
     def forward(self, word_idx_tensor, pos_idx_tensor, head_tensor):
         # get x = concat(e(w), e(p))
@@ -98,6 +106,7 @@ class DnnDependencyParser(nn.Module):
         lstm_out = lstm_out.view(lstm_out.shape[0], -1)  # [seq_length, 2*hidden_dim]
         out = self.mlp(lstm_out)
         return out
+
 
 def NLLL_function(scores, true_tree):
     """
@@ -184,7 +193,10 @@ def main():
     #a[1] -> pos - idx of a sentence
     #a[2] -> head token per sentence
     assert len(a[0])==len(a[1])==len(a[2])
-
+    print(a[0])
+    print(a[1])
+    print(a[2])
+    exit()
 
     word_vocab_size = len(train.word2idx)
     tag_vocab_size = len(train.pos_idx_mappings)
@@ -223,7 +235,7 @@ def main():
             if i % accumulate_grad_steps == 0:
                 print("batch done w batch_acc = ", batch_acc)
                 optimizer.step()
-                model.zero_grad()  # or opt?
+                optimizer.zero_grad()  # or opt?
                 loss_list.append(batch_loss)
                 accuracy_list.append(batch_acc / accumulate_grad_steps)
                 batch_acc = 0

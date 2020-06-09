@@ -226,7 +226,6 @@ def main():
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
 
             tag_scores = model(words_idx_tensor, pos_idx_tensor)
-            print(tag_scores.shape)
             # print("tag_scores shape -", tag_scores.shape)
             # print("pos_idx_tensor shape -", pos_idx_tensor.shape)
             loss = NLLL_function(tag_scores, heads_tensor[0].to(device))
