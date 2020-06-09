@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
 
 MLP_HIDDEN_DIM = 100  # 50
-EPOCHS = 15
+EPOCHS = 150
 WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
 HIDDEN_DIM = 125
@@ -166,8 +166,6 @@ def accuracy(ground_truth, energy_table):
     # first one is the HEAD of root so we avoid taking it into account
     y_pred = torch.from_numpy(predicted_mst[1:])
     y_true = ground_truth[1:]
-    print(y_pred)
-    print(y_true)
     acc = (y_pred == y_true).sum()/float(y_true.shape[0])
     return acc.item()
 
@@ -217,26 +215,41 @@ def main():
     loss_list = []
     epochs = EPOCHS
     for epoch in range(epochs):
+        # test acc
+        test_acc = 0
+        test_size = 0
+        for batch_idx, input_data in enumerate(test_dataloader):
+          test_size += 1
+          with torch.no_grad():
+            words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
+            tag_scores = model(words_idx_tensor, pos_idx_tensor)
+            test_acc += (accuracy(heads_tensor[0].cpu(), tag_scores.cpu()))
+        print("EPOCH = ", epoch)
+        print("EPOCH test acc = ", test_acc/test_size)
+        # train
         acc = 0  # to keep track of accuracy
         printable_loss = 0  # To keep track of the loss value
         i = 0
         batch_loss = 0
+        batch_acc = 0
         for batch_idx, input_data in enumerate(train_dataloader):
             i += 1
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
 
             tag_scores = model(words_idx_tensor, pos_idx_tensor)
-            # print("tag_scores shape -", tag_scores.shape)
-            # print("pos_idx_tensor shape -", pos_idx_tensor.shape)
             loss = NLLL_function(tag_scores, heads_tensor[0].to(device))
             loss = loss / acumulate_grad_steps
             loss.backward()
             batch_loss += loss
+            acc = (accuracy(heads_tensor[0].cpu(), tag_scores.cpu())) / acumulate_grad_steps
+            batch_acc += acc
             if i % acumulate_grad_steps == 0:
                 optimizer.step()
                 model.zero_grad()
-                print(batch_loss)
+                print("batch_loss = ", batch_loss.item())
+                print("batch_acc = ", batch_acc)
                 batch_loss = 0
+                batch_acc = 0
             printable_loss += loss.item()
             _, indices = torch.max(tag_scores, 1)
             # print("tag_scores shape-", tag_scores.shape)
