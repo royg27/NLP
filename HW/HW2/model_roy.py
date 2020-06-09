@@ -56,6 +56,7 @@ class MLP(nn.Module):
             summed_values = mod_hidden + heads_hidden   # a single mod with all heads possibilities
             x = self.non_linearity(summed_values)
             scores[:, mod] = torch.flatten(self.second_mlp(x))
+            scores[mod, mod] = 0    # a word cant be its head
         return scores
 
 
