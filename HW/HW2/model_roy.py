@@ -20,8 +20,12 @@ EPOCHS = 15
 WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
 HIDDEN_DIM = 125
+LEARNING_RATE = 0.01
 
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
+
+use_cuda = torch.cuda.is_available()
+device = torch.device("cuda:0" if use_cuda else "cpu")
 
 class SplittedMLP(nn.Module):
     def __init__(self, lstm_dim, mlp_hidden_dim):
@@ -45,7 +49,7 @@ class MLP(nn.Module):
     def forward(self, lstm_out):
         sentence_length = lstm_out.shape[0]
         heads_hidden, mods_hidden = self.first_mlp(lstm_out)
-        scores = torch.zeros(size=(sentence_length, sentence_length))
+        scores = torch.zeros(size=(sentence_length, sentence_length)).to(device)
         # we will fill the table row by row, using broadcasting
         for mod in range(sentence_length):
             mod_hidden = mods_hidden[mod]
@@ -84,9 +88,9 @@ class DnnDependencyParser(nn.Module):
 
     def forward(self, word_idx_tensor, pos_idx_tensor, head_tensor):
         # get x = concat(e(w), e(p))
-        e_w = self.word_embedding(word_idx_tensor.to(self.device))  # [batch_size, seq_length, e_w]
-        e_p = self.pos_embedding(pos_idx_tensor.to(self.device))    # [batch_size, seq_length, e_p]
-        embeds = torch.cat((e_w, e_p), dim=2)                       # [batch_size, seq_length, e_w + e_p]
+        e_w = self.word_embedding(word_idx_tensor.to(self.device))                  # [batch_size, seq_length, e_w]
+        e_p = self.pos_embedding(pos_idx_tensor.to(self.device))                    # [batch_size, seq_length, e_p]
+        embeds = torch.cat((e_w, e_p), dim=2).to(self.device)                       # [batch_size, seq_length, e_w + e_p]
         assert embeds.shape[0] == 1 and embeds.shape[2] == POS_EMBEDDING_DIM + WORD_EMBEDDING_DIM
         lstm_out, _ = self.lstm(embeds.view(embeds.shape[1], 1, -1))  # [seq_length, batch_size, 2*hidden_dim]
         # Turns the output into one big tensor, each line is  rep of a word in the sentence
@@ -109,8 +113,9 @@ def NLLL_function(scores, true_tree):
     sentence_length = clean_scores.shape[1]     # without root
     loss = 0
     for mod in range(sentence_length):
-        cross_entropy_loss(scores[:, mod].unsqueeze(dim=0), clean_true_tree[mod:mod+1])
-        loss += cross_entropy_loss(scores[:,mod], clean_true_tree[mod])
+        # print(scores[:,mod].unsqueeze(dim=0).shape)
+        # print(clean_true_tree[mod:mod+1])
+        loss += cross_entropy_loss(scores[:, mod].unsqueeze(dim=0), clean_true_tree[mod:mod+1])
     return loss
 
 
@@ -153,6 +158,8 @@ def accuracy(ground_truth, energy_table):
     # first one is the HEAD of root so we avoid taking it into account
     y_pred = torch.from_numpy(predicted_mst[1:])
     y_true = ground_truth[1:]
+    print(y_pred)
+    print(y_true)
     acc = (y_pred == y_true).sum()/float(y_true.shape[0])
     return acc.item()
 
@@ -183,17 +190,15 @@ def main():
     word_vocab_size = len(train.word2idx)
     tag_vocab_size = len(train.pos_idx_mappings)
 
-    model = DnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size, tag_vocab_size)
-
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda:0" if use_cuda else "cpu")
-
+    
+    
+    model = DnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size, tag_vocab_size).to(device)
     if use_cuda:
         model.cuda()
 
 
     # We will be using a simple SGD optimizer to minimize the loss function
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     accumulate_grad_steps = 50  # This is the actual batch_size, while we officially use batch_size=1
 
     # Training start
@@ -212,16 +217,16 @@ def main():
             i += 1
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
             model_output = model(words_idx_tensor, pos_idx_tensor, heads_tensor)
-            loss = NLLL_function(model_output, heads_tensor[0])
+            loss = NLLL_function(model_output, heads_tensor[0].to(device))
             loss = loss / accumulate_grad_steps
             batch_loss += loss
-            acc = accuracy(ground_truth=heads_tensor[0], energy_table=model_output)
+            acc = accuracy(ground_truth=heads_tensor[0].cpu(), energy_table=model_output.cpu())
             batch_acc += acc
 
             if i % accumulate_grad_steps == 0:
-                print("batch done w acc = ", (1.0*batch_acc) / accumulate_grad_steps)
+                print("batch done w batch_acc = ", batch_acc)
                 optimizer.step()
-                optimizer.zero_grad()
+                model.zero_grad()  # or opt?
                 loss_list.append(batch_loss)
                 accuracy_list.append(batch_acc / accumulate_grad_steps)
                 batch_acc = 0
