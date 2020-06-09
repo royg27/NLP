@@ -178,30 +178,30 @@ class PosDataset(Dataset):
         return {i: sample_tuple for i, sample_tuple in enumerate(zip(sentence_word_idx_list, sentence_pos_idx_list, sentence_head_idx_list))}
 
 
-data_dir = "HW2-files/"
-path_train = data_dir + "train.labeled"
-print("path_train -", path_train)
-path_test = data_dir + "test.labeled"
-print("path_test -", path_test)
-
-paths_list = [path_train, path_test]
-word_dict, pos_dict = get_vocabs(paths_list)
-train = PosDataset(word_dict, pos_dict, data_dir, 'train')
-train_dataloader = DataLoader(train, shuffle=True)
-test = PosDataset(word_dict, pos_dict, data_dir, 'test')
-test_dataloader = DataLoader(test, shuffle=False)
-
-
-a = next(iter(train_dataloader))
-#a[0] -> word - idx of a sentence
-#a[1] -> pos - idx of a sentence
-#a[2] -> head token per sentence
-assert len(a[0])==len(a[1])==len(a[2])
-
-for batch_idx, input_data in enumerate(train_dataloader):
-    if batch_idx>0:
-        break
-    sentence, pos, heads = input_data
-    print(sentence.shape)
-    print(pos.shape)
-    print(heads.shape)
+# data_dir = "HW2-files/"
+# path_train = data_dir + "train.labeled"
+# print("path_train -", path_train)
+# path_test = data_dir + "test.labeled"
+# print("path_test -", path_test)
+#
+# paths_list = [path_train, path_test]
+# word_dict, pos_dict = get_vocabs(paths_list)
+# train = PosDataset(word_dict, pos_dict, data_dir, 'train')
+# train_dataloader = DataLoader(train, shuffle=True)
+# test = PosDataset(word_dict, pos_dict, data_dir, 'test')
+# test_dataloader = DataLoader(test, shuffle=False)
+#
+#
+# a = next(iter(train_dataloader))
+# #a[0] -> word - idx of a sentence
+# #a[1] -> pos - idx of a sentence
+# #a[2] -> head token per sentence
+# assert len(a[0])==len(a[1])==len(a[2])
+#
+# for batch_idx, input_data in enumerate(train_dataloader):
+#     if batch_idx>0:
+#         break
+#     sentence, pos, heads = input_data
+#     print(sentence.shape)
+#     print(pos.shape)
+#     print(heads.shape)

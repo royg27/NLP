@@ -109,6 +109,7 @@ def NLLL_function(scores, true_tree):
     sentence_length = clean_scores.shape[1]     # without root
     loss = 0
     for mod in range(sentence_length):
+        cross_entropy_loss(scores[:, mod].unsqueeze(dim=0), clean_true_tree[mod:mod+1])
         loss += cross_entropy_loss(scores[:,mod], clean_true_tree[mod])
     return loss
 
@@ -211,7 +212,7 @@ def main():
             i += 1
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
             model_output = model(words_idx_tensor, pos_idx_tensor, heads_tensor)
-            loss = NLLL(model_output, heads_tensor)
+            loss = NLLL_function(model_output, heads_tensor[0])
             loss = loss / accumulate_grad_steps
             batch_loss += loss
             acc = accuracy(ground_truth=heads_tensor[0], energy_table=model_output)
