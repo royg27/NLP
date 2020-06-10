@@ -21,6 +21,7 @@ WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
 HIDDEN_DIM = 125
 LEARNING_RATE = 0.01
+EARLY_STOPPING = 5  # num epochs with no validation acc improvement to stop training
 
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
@@ -180,7 +181,10 @@ def main():
     paths_list = [path_train, path_test]
     word_dict, pos_dict = get_vocabs(paths_list)
     train = PosDataset(word_dict, pos_dict, data_dir, 'train')
-    train_dataloader = DataLoader(train, shuffle=False)  # TODO return to true after debugging
+    # split into validation
+    train_set, val_set = torch.utils.data.random_split(train, [4000, 1000])
+    train_dataloader = DataLoader(train_set, shuffle=False)  # TODO return to true after debugging
+    val_dataloader = DataLoader(val_set, shuffle=False)
     test = PosDataset(word_dict, pos_dict, data_dir, 'test')
     test_dataloader = DataLoader(test, shuffle=False)
 
@@ -213,19 +217,29 @@ def main():
     print("Training Started")
     accuracy_list = []
     loss_list = []
-    epochs = EPOCHS
-    for epoch in range(epochs):
+    best_val_acc = 0
+    num_epochs_wo_improvement = 0
+    for epoch in range(EPOCHS):
         # test acc
-        test_acc = 0
-        test_size = 0
-        for batch_idx, input_data in enumerate(test_dataloader):
-          test_size += 1
+        val_acc = 0
+        val_size = 0
+        for batch_idx, input_data in enumerate(val_dataloader):
+          val_size += 1
           with torch.no_grad():
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
             tag_scores = model(words_idx_tensor, pos_idx_tensor)
-            test_acc += (accuracy(heads_tensor[0].cpu(), tag_scores.cpu()))
+            val_acc += (accuracy(heads_tensor[0].cpu(), tag_scores.cpu()))
         print("EPOCH = ", epoch)
-        print("EPOCH test acc = ", test_acc/test_size)
+        print("EPOCH val acc = ", val_acc/val_size)
+        if val_acc/val_size < best_val_acc:     # no improvement
+            num_epochs_wo_improvement += 1
+            if num_epochs_wo_improvement >= EARLY_STOPPING:
+                print("STOPPED TRAINING DUE TO EARLY STOPPING")
+                return
+        else:                                   # improvement
+            num_epochs_wo_improvement = 0
+            best_val_acc = val_acc/val_size
+
         # train
         acc = 0  # to keep track of accuracy
         printable_loss = 0  # To keep track of the loss value
