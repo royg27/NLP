@@ -21,7 +21,8 @@ WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
 HIDDEN_DIM = 125
 LEARNING_RATE = 0.01
-EARLY_STOPPING = 5  # num epochs with no validation acc improvement to stop training
+EARLY_STOPPING = 10  # num epochs with no validation acc improvement to stop training
+PATH = "./basic_model_best_params"
 
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
@@ -237,6 +238,8 @@ def main():
                 print("STOPPED TRAINING DUE TO EARLY STOPPING")
                 return
         else:                                   # improvement
+            print("saving model since it improved on validation :)")
+            torch.save(model.state_dict(), PATH)
             num_epochs_wo_improvement = 0
             best_val_acc = val_acc/val_size
 
