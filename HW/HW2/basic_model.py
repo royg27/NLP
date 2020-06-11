@@ -171,6 +171,19 @@ def accuracy(ground_truth, energy_table):
     acc = (y_pred == y_true).sum()/float(y_true.shape[0])
     return acc.item()
 
+
+def evaluate(model, data_loader):
+    val_acc = 0
+    val_size = 0
+    for batch_idx, input_data in enumerate(data_loader):
+        val_size += 1
+        with torch.no_grad():
+            words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
+            tag_scores = model(words_idx_tensor, pos_idx_tensor)
+            val_acc += (accuracy(heads_tensor[0].cpu(), tag_scores.cpu()))
+    return val_acc / val_size
+
+
 def main():
     # sanity check
     data_dir = "HW2-files/"
@@ -221,18 +234,13 @@ def main():
     best_val_acc = 0
     num_epochs_wo_improvement = 0
     for epoch in range(EPOCHS):
-        # test acc
-        val_acc = 0
-        val_size = 0
-        for batch_idx, input_data in enumerate(val_dataloader):
-          val_size += 1
-          with torch.no_grad():
-            words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
-            tag_scores = model(words_idx_tensor, pos_idx_tensor)
-            val_acc += (accuracy(heads_tensor[0].cpu(), tag_scores.cpu()))
+        val_acc = evaluate(model, val_dataloader)
+        if epoch == 10:
+            test_acc = evaluate(model, test_dataloader)
+            print("test acc = ", test_acc)
         print("EPOCH = ", epoch)
-        print("EPOCH val acc = ", val_acc/val_size)
-        if val_acc/val_size < best_val_acc:     # no improvement
+        print("EPOCH val acc = ", val_acc)
+        if val_acc < best_val_acc:     # no improvement
             num_epochs_wo_improvement += 1
             if num_epochs_wo_improvement >= EARLY_STOPPING:
                 print("STOPPED TRAINING DUE TO EARLY STOPPING")
@@ -241,7 +249,7 @@ def main():
             print("saving model since it improved on validation :)")
             torch.save(model.state_dict(), PATH)
             num_epochs_wo_improvement = 0
-            best_val_acc = val_acc/val_size
+            best_val_acc = val_acc
 
         # train
         acc = 0  # to keep track of accuracy
