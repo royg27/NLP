@@ -24,6 +24,8 @@ LEARNING_RATE = 0.01
 EARLY_STOPPING = 10  # num epochs with no validation acc improvement to stop training
 PATH = "./basic_model_best_params"
 
+HYPER_PARAMETER_TUNING = True
+
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
 use_cuda = torch.cuda.is_available()
@@ -184,6 +186,122 @@ def evaluate(model, data_loader):
     return val_acc / val_size
 
 
+def hyper_parameter_tuning():
+    mlp_hidden_dim_arr = [50, 100, 150, 200, 250]
+    EPOCHS = 150
+    word_embedding_dim_arr = [50, 100, 150, 200, 250]
+    pos_embedding_dim_arr = [10, 25]
+    hidden_dim_arr = [50, 75, 100, 125, 150]
+    learning_rate_arr = [0.001, 0.01, 0.05, 0.1, 0.5, 1]
+
+    # sanity check
+    data_dir = "HW2-files/"
+    path_train = data_dir + "train.labeled"
+    print("path_train -", path_train)
+    path_test = data_dir + "test.labeled"
+    print("path_test -", path_test)
+
+    paths_list = [path_train, path_test]
+    word_dict, pos_dict = get_vocabs(paths_list)
+    train = PosDataset(word_dict, pos_dict, data_dir, 'train')
+    # split into validation
+    train_set, val_set = torch.utils.data.random_split(train, [4000, 1000])
+    train_dataloader = DataLoader(train_set, shuffle=False)  # TODO return to true after debugging
+    val_dataloader = DataLoader(val_set, shuffle=False)
+    test = PosDataset(word_dict, pos_dict, data_dir, 'test')
+    test_dataloader = DataLoader(test, shuffle=False)
+
+    a = next(iter(train_dataloader))
+    # a[0] -> word - idx of a sentence
+    # a[1] -> pos - idx of a sentence
+    # a[2] -> head token per sentence
+    assert len(a[0]) == len(a[1]) == len(a[2])
+
+    word_vocab_size = len(train.word2idx)
+    print(word_vocab_size)
+    tag_vocab_size = len(train.pos_idx_mappings)
+    print(tag_vocab_size)
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda:0" if use_cuda else "cpu")
+
+    max_acc = 0
+    max_mlp_hidden_dim = 0
+    max_word_embedding_dim = 0
+    max_pos_embedding_dim = 0
+    max_hidden_dim = 0
+    max_learning_rate = 0
+
+    for mlp_h_d in mlp_hidden_dim_arr:
+        for word_e_d in word_embedding_dim_arr:
+            for pos_e_d in pos_embedding_dim_arr:
+                for hidden in hidden_dim_arr:
+                    for lr in learning_rate_arr:
+                        model = DnnDependencyParser(word_e_d, pos_e_d, hidden, word_vocab_size, tag_vocab_size).to(device)
+
+                        if use_cuda:
+                            model.cuda()
+
+                        # Define the loss function as the Negative Log Likelihood loss (NLLLoss)
+                        loss_function = nn.NLLLoss()
+
+                        # We will be using a simple SGD optimizer to minimize the loss function
+                        optimizer = optim.Adam(model.parameters(), lr=lr)
+                        acumulate_grad_steps = 128
+
+                        accuracy_list = []
+                        loss_list = []
+                        best_val_acc = 0
+                        num_epochs_no_improvement = 0
+                        for epoch in range(EPOCHS):
+                            val_acc = evaluate(model, val_dataloader)
+                            if val_acc < best_val_acc:  # no improvement
+                                num_epochs_no_improvement += 1
+                                if num_epochs_wo_improvement >= EARLY_STOPPING:
+                                    # best config acc is saved in best_val_acc
+                                    print(f"mlp_hidden: {mlp_h_d}, word_emb: {word_e_d}, pos_emb: {pos_e_d}, lstm_hidden: "
+                                          f"{hidden}, lr:{lr} -> acc: {val_acc}")
+                                    if val_acc > max_acc:
+                                        max_acc = val_acc
+                                        max_mlp_hidden_dim = mlp_h_d
+                                        max_word_embedding_dim = word_e_d
+                                        max_pos_embedding_dim = pos_e_d
+                                        max_hidden_dim = hidden
+                                        max_learning_rate = lr
+                                    break
+                            else:  # improvement
+                                # torch.save(model.state_dict(), PATH)
+                                num_epochs_no_improvement = 0
+                                best_val_acc = val_acc
+
+                            # train
+                            acc = 0  # to keep track of accuracy
+                            printable_loss = 0  # To keep track of the loss value
+                            i = 0
+                            batch_loss = 0
+                            batch_acc = 0
+                            for batch_idx, input_data in enumerate(train_dataloader):
+                                i += 1
+                                words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
+
+                                tag_scores = model(words_idx_tensor, pos_idx_tensor)
+                                loss = NLLL_function(tag_scores, heads_tensor[0].to(device))
+                                loss = loss / acumulate_grad_steps
+                                loss.backward()
+                                batch_loss += loss
+                                acc = (accuracy(heads_tensor[0].cpu(), tag_scores.cpu())) / acumulate_grad_steps
+                                batch_acc += acc
+                                if i % acumulate_grad_steps == 0:
+                                    optimizer.step()
+                                    model.zero_grad()
+                                    batch_loss = 0
+                                    batch_acc = 0
+                                printable_loss += loss.item()
+                                _, indices = torch.max(tag_scores, 1)
+    print("best params:")
+    print(f"mlp_hidden: {max_mlp_hidden_dim}, word_emb: {max_word_embedding_dim}, pos_emb: {max_pos_embedding_dim}, lstm_hidden: "
+          f"{max_hidden_dim}, lr:{max_learning_rate} -> acc: {max_acc}")
+
+
 def main():
     # sanity check
     data_dir = "HW2-files/"
@@ -289,4 +407,7 @@ def main():
         e_interval = i
 
 
-main()
+if HYPER_PARAMETER_TUNING:
+    hyper_parameter_tuning()
+else:
+    main()
