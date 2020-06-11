@@ -15,6 +15,7 @@ from utils import *
 import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
 
+# TODO pick the best values according to the hyper-parameters tuning
 MLP_HIDDEN_DIM = 100  # 50
 EPOCHS = 150
 WORD_EMBEDDING_DIM = 100
@@ -104,7 +105,7 @@ class DnnDependencyParser(nn.Module):
         e_w = self.word_embedding(word_idx_tensor.to(self.device))                  # [batch_size, seq_length, e_w]
         e_p = self.pos_embedding(pos_idx_tensor.to(self.device))                    # [batch_size, seq_length, e_p]
         embeds = torch.cat((e_w, e_p), dim=2).to(self.device)                       # [batch_size, seq_length, e_w + e_p]
-        assert embeds.shape[0] == 1 and embeds.shape[2] == POS_EMBEDDING_DIM + WORD_EMBEDDING_DIM
+        # assert embeds.shape[0] == 1 and embeds.shape[2] == POS_EMBEDDING_DIM + WORD_EMBEDDING_DIM
         lstm_out, _ = self.lstm(embeds.view(embeds.shape[1], 1, -1))  # [seq_length, batch_size, 2*hidden_dim]
         # Turns the output into one big tensor, each line is  rep of a word in the sentence
         lstm_out = lstm_out.view(lstm_out.shape[0], -1)  # [seq_length, 2*hidden_dim]
@@ -256,7 +257,7 @@ def hyper_parameter_tuning():
                             val_acc = evaluate(model, val_dataloader)
                             if val_acc < best_val_acc:  # no improvement
                                 num_epochs_no_improvement += 1
-                                if num_epochs_wo_improvement >= EARLY_STOPPING:
+                                if num_epochs_no_improvement >= EARLY_STOPPING:
                                     # best config acc is saved in best_val_acc
                                     print(f"mlp_hidden: {mlp_h_d}, word_emb: {word_e_d}, pos_emb: {pos_e_d}, lstm_hidden: "
                                           f"{hidden}, lr:{lr} -> acc: {val_acc}")
@@ -347,15 +348,13 @@ def main():
 
     # Training start
     print("Training Started")
-    accuracy_list = []
-    loss_list = []
+    epoch_loss_list = []
+    epoch_train_acc_list = []
+    epoch_test_acc_list = []
     best_val_acc = 0
     num_epochs_wo_improvement = 0
     for epoch in range(EPOCHS):
         val_acc = evaluate(model, val_dataloader)
-        if epoch == 10:
-            test_acc = evaluate(model, test_dataloader)
-            print("test acc = ", test_acc)
         print("EPOCH = ", epoch)
         print("EPOCH val acc = ", val_acc)
         if val_acc < best_val_acc:     # no improvement
@@ -375,12 +374,17 @@ def main():
         i = 0
         batch_loss = 0
         batch_acc = 0
+        epoch_loss = 0
+
         for batch_idx, input_data in enumerate(train_dataloader):
             i += 1
             words_idx_tensor, pos_idx_tensor, heads_tensor = input_data
 
             tag_scores = model(words_idx_tensor, pos_idx_tensor)
             loss = NLLL_function(tag_scores, heads_tensor[0].to(device))
+            # epoch statistics
+            epoch_loss += loss
+            #
             loss = loss / acumulate_grad_steps
             loss.backward()
             batch_loss += loss
@@ -393,18 +397,27 @@ def main():
                 print("batch_acc = ", batch_acc)
                 batch_loss = 0
                 batch_acc = 0
-            printable_loss += loss.item()
-            _, indices = torch.max(tag_scores, 1)
-            # print("tag_scores shape-", tag_scores.shape)
-            # print("indices shape-", indices.shape)
-            # acc += indices.eq(pos_idx_tensor.view_as(indices)).mean().item()
-            # acc += torch.mean(torch.tensor(pos_idx_tensor.to("cpu") == indices.to("cpu"), dtype=torch.float))
-        # printable_loss = printable_loss / len(train)
-        # acc = acc / len(train)
-        # loss_list.append(float(printable_loss))
-        # accuracy_list.append(float(acc))
-        # test_acc = evaluate()
-        e_interval = i
+        # end of epoch - get statistics
+        epoch_loss_list.append(epoch_loss / i)
+        epoch_train_acc_list.append(evaluate(model, train_dataloader))
+        epoch_test_acc_list.append(evaluate(model, test_dataloader))
+    # end of train - plot the two graphs
+    fig = plt.figure()
+    plt.subplot(3, 1, 1)
+    plt.plot(epoch_loss_list)
+    plt.title("loss")
+    plt.subplot(3, 1, 2)
+    plt.plot(epoch_train_acc_list)
+    plt.title("train UAS")
+    plt.subplot(3, 1, 3)
+    plt.plot(epoch_test_acc_list)
+    plt.title("test UAS")
+    plt.show()
+
+
+
+
+
 
 
 if HYPER_PARAMETER_TUNING:
