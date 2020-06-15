@@ -15,8 +15,8 @@ from utils import *
 import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
 
-# TODO pick the best values according to the hyper-parameters tuning
-MLP_HIDDEN_DIM = 100  # 50
+# taken from the paper
+MLP_HIDDEN_DIM = 100
 EPOCHS = 150
 WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
@@ -25,7 +25,7 @@ LEARNING_RATE = 0.01
 EARLY_STOPPING = 10  # num epochs with no validation acc improvement to stop training
 PATH = "./basic_model_best_params"
 
-HYPER_PARAMETER_TUNING = True
+HYPER_PARAMETER_TUNING = False
 
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
@@ -203,13 +203,13 @@ def hyper_parameter_tuning():
     print("path_test -", path_test)
 
     paths_list = [path_train, path_test]
-    word_dict, pos_dict = get_vocabs(paths_list)
-    train = PosDataset(word_dict, pos_dict, data_dir, 'train')
+    word_cnt, word_dict, pos_dict = get_vocabs(paths_list)
+    train = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'train')
     # split into validation
     train_set, val_set = torch.utils.data.random_split(train, [4000, 1000])
     train_dataloader = DataLoader(train_set, shuffle=False)  # TODO return to true after debugging
     val_dataloader = DataLoader(val_set, shuffle=False)
-    test = PosDataset(word_dict, pos_dict, data_dir, 'test')
+    test = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'test')
     test_dataloader = DataLoader(test, shuffle=False)
 
     a = next(iter(train_dataloader))
@@ -312,13 +312,13 @@ def main():
     print("path_test -", path_test)
 
     paths_list = [path_train, path_test]
-    word_dict, pos_dict = get_vocabs(paths_list)
-    train = PosDataset(word_dict, pos_dict, data_dir, 'train')
+    word_cnt, word_dict, pos_dict = get_vocabs(paths_list)
+    train = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'train')
     # split into validation
     train_set, val_set = torch.utils.data.random_split(train, [4000, 1000])
     train_dataloader = DataLoader(train_set, shuffle=False)  # TODO return to true after debugging
     val_dataloader = DataLoader(val_set, shuffle=False)
-    test = PosDataset(word_dict, pos_dict, data_dir, 'test')
+    test = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'test')
     test_dataloader = DataLoader(test, shuffle=False)
 
     a = next(iter(train_dataloader))

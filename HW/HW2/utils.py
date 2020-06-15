@@ -60,6 +60,8 @@ def get_vocabs(list_of_paths):
     len_pos2idx += 1
     pos_dict[UNKNOWN_TOKEN] = len_pos2idx
     len_pos2idx += 1
+    # word dropout
+    word_count = defaultdict(int)
     for file_path in list_of_paths:
         with open(file_path) as f:
             for line in f:
@@ -68,13 +70,19 @@ def get_vocabs(list_of_paths):
                 if(len(splited_words)!=10):
                     continue
                 word, pos = splited_words[1], splited_words[3]
+                # update counter
+                if word in word_count:
+                  word_count[word] = word_count[word] + 1
+                else:
+                  word_count[word] = 1
+                # update word2idx
                 if word not in word_dict:
                     word_dict[word] = len_word2idx
                     len_word2idx += 1
                 if pos not in pos_dict:
                     pos_dict[pos] = len_pos2idx
                     len_pos2idx += 1
-    return word_dict, pos_dict
+    return word_count, word_dict, pos_dict
 
 
 class PosDataReader:
@@ -107,13 +115,15 @@ class PosDataReader:
 
 # class that creates the data set
 class PosDataset(Dataset):
-    def __init__(self, word_dict, pos_dict, dir_path: str, subset: str, word_embeddings=None):
+    def __init__(self, word_count, word_dict, pos_dict, dir_path: str, subset: str, word_embeddings=None, alpha = 0.25):
         super().__init__()
         self.subset = subset  # One of the following: [train, test]
         self.file = dir_path + subset + ".labeled"
         self.datareader = PosDataReader(self.file, word_dict, pos_dict)
         self.vocab_size = len(self.datareader.word_dict)  # how many words in corpus
         self.word2idx = word_dict
+        self.word_cnt = word_count
+        self.alpha = alpha
         # if word_embeddings:  # if we have a word embeding -> embed
         #     self.word_idx_mappings, self.idx_word_mappings, self.word_vectors = word_embeddings
         # else:  # use pre-trained (glove)
@@ -169,7 +179,13 @@ class PosDataset(Dataset):
                 if word not in self.word2idx:
                     words_idx_list.append(self.unknown_idx)
                 else:
-                    words_idx_list.append(self.word2idx.get(word))
+                    # apply word drop out with probability - [alpha / (#(w) + alpha)]
+                    prob = self.alpha / (self.word_cnt[word] + self.alpha)
+                    if np.random.random() < prob:
+                    # apply word dropout
+                      words_idx_list.append(self.unknown_idx)
+                    else:
+                      words_idx_list.append(self.word2idx.get(word))
                 pos_idx_list.append(self.pos_idx_mappings.get(pos))
                 head_idx_list.append(int(head_token))
             sentence_word_idx_list.append(torch.tensor(words_idx_list, dtype=torch.long, requires_grad=False))
@@ -178,30 +194,30 @@ class PosDataset(Dataset):
         return {i: sample_tuple for i, sample_tuple in enumerate(zip(sentence_word_idx_list, sentence_pos_idx_list, sentence_head_idx_list))}
 
 
-# data_dir = "HW2-files/"
-# path_train = data_dir + "train.labeled"
-# print("path_train -", path_train)
-# path_test = data_dir + "test.labeled"
-# print("path_test -", path_test)
+#data_dir = "HW2-files/"
+#path_train = data_dir + "train.labeled"
+#print("path_train -", path_train)
+#path_test = data_dir + "test.labeled"
+#print("path_test -", path_test)
 #
-# paths_list = [path_train, path_test]
-# word_dict, pos_dict = get_vocabs(paths_list)
-# train = PosDataset(word_dict, pos_dict, data_dir, 'train')
-# train_dataloader = DataLoader(train, shuffle=True)
-# test = PosDataset(word_dict, pos_dict, data_dir, 'test')
-# test_dataloader = DataLoader(test, shuffle=False)
+#paths_list = [path_train, path_test]
+#word_cnt, word_dict, pos_dict = get_vocabs(paths_list)
+#train = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'train')
+#train_dataloader = DataLoader(train, shuffle=True)
+#test = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'test')
+#test_dataloader = DataLoader(test, shuffle=False)
 #
 #
-# a = next(iter(train_dataloader))
-# #a[0] -> word - idx of a sentence
-# #a[1] -> pos - idx of a sentence
-# #a[2] -> head token per sentence
-# assert len(a[0])==len(a[1])==len(a[2])
+#a = next(iter(train_dataloader))
+##a[0] -> word - idx of a sentence
+##a[1] -> pos - idx of a sentence
+##a[2] -> head token per sentence
+#assert len(a[0])==len(a[1])==len(a[2])
 #
-# for batch_idx, input_data in enumerate(train_dataloader):
-#     if batch_idx>0:
-#         break
-#     sentence, pos, heads = input_data
-#     print(sentence.shape)
-#     print(pos.shape)
-#     print(heads.shape)
+#for batch_idx, input_data in enumerate(train_dataloader):
+#    if batch_idx>0:
+#        break
+#    sentence, pos, heads = input_data
+#    print(sentence.shape)
+#    print(pos.shape)
+#    print(heads.shape)
