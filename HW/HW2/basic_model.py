@@ -72,7 +72,7 @@ class MLP(nn.Module):
     def __init__(self, lstm_dim, mlp_hidden_dim):
         super(MLP, self).__init__()
         self.first_mlp = SplittedMLP(lstm_dim, mlp_hidden_dim)
-        self.non_linearity = nn.ReLU()
+        self.non_linearity = nn.Tanh()
         self.second_mlp = nn.Linear(mlp_hidden_dim, 1, bias=True)   # will output a score of a pair
 
     def forward(self, lstm_out):
