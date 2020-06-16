@@ -14,6 +14,7 @@ from torch.utils.data.dataloader import DataLoader
 from utils import *
 import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
+from os import path
 
 # taken from the paper
 MLP_HIDDEN_DIM = 100
@@ -26,6 +27,7 @@ EARLY_STOPPING = 10  # num epochs with no validation acc improvement to stop tra
 PATH = "./basic_model_best_params"
 
 HYPER_PARAMETER_TUNING = False
+LOAD_PRETRAINED = False
 
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
@@ -335,7 +337,11 @@ def main():
     device = torch.device("cuda:0" if use_cuda else "cpu")
 
     model = DnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size, tag_vocab_size).to(device)
-
+    if path.exists(PATH) and LOAD_PRETRAINED:
+      print("loading model")
+      model.load_state_dict(torch.load(PATH))
+      # TODO continue
+      return
     if use_cuda:
         model.cuda()
 
@@ -367,6 +373,18 @@ def main():
             torch.save(model.state_dict(), PATH)
             num_epochs_wo_improvement = 0
             best_val_acc = val_acc
+            fig = plt.figure()
+            plt.subplot(3, 1, 1)
+            plt.plot(epoch_loss_list)
+            plt.title("loss")
+            plt.subplot(3, 1, 2)
+            plt.plot(epoch_train_acc_list)
+            plt.title("train UAS")
+            plt.subplot(3, 1, 3)
+            plt.plot(epoch_test_acc_list)
+            plt.title("test UAS")
+            print(epoch_train_acc_list)
+            plt.savefig('./basic_model_graphs.png')
 
         # train
         acc = 0  # to keep track of accuracy
@@ -413,6 +431,7 @@ def main():
     plt.plot(epoch_test_acc_list)
     plt.title("test UAS")
     plt.show()
+    plt.savefig('basic_model_graphs.png')
 
 
 
