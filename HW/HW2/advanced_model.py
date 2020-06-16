@@ -1,20 +1,9 @@
-from collections import defaultdict
-# from torchtext.vocab import Vocab
 from torch.utils.data.dataset import Dataset, TensorDataset
-from pathlib import Path
-from collections import Counter
-import pandas as pd
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import random
-from torch.utils.data.dataloader import DataLoader
 from utils import *
 import matplotlib.pyplot as plt
 from chu_liu_edmonds import *
-from os import path
+from torchtext.vocab import Vocab
+from collections import Counter
 
 # taken from the paper
 MLP_HIDDEN_DIM = 100
@@ -27,6 +16,7 @@ EARLY_STOPPING = 3  # num epochs with no validation acc improvement to stop trai
 PATH = "./basic_model_best_params"
 
 HYPER_PARAMETER_TUNING = True
+USE_PRETRAINED = False
 
 cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
@@ -67,11 +57,15 @@ class MLP(nn.Module):
 
 
 class AdvancedDnnDependencyParser(nn.Module):
-    def __init__(self, word_embedding_dim, pos_embedding_dim, hidden_dim, word_vocab_size, tag_vocab_size, num_lst_layers=2):
+    def __init__(self, word_embedding_dim, pos_embedding_dim, hidden_dim, word_vocab_size, tag_vocab_size,
+                 num_lst_layers=2, word_embedding_table=None):
         super(AdvancedDnnDependencyParser, self).__init__()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # get a tensor of size word_vocab_size and return a word embedding
-        self.word_embedding = nn.Embedding(word_vocab_size, word_embedding_dim)
+        if word_embedding_table is None:
+            self.word_embedding = nn.Embedding(word_vocab_size, word_embedding_dim)
+        else:
+            self.word_embedding = nn.Embedding.from_pretrained(word_embedding_table, freeze=False)
         # get a tensor of size tag_vocab_size and return a pos embedding
         self.pos_embedding = nn.Embedding(tag_vocab_size, pos_embedding_dim)
         self.lstm = nn.LSTM(input_size=word_embedding_dim + pos_embedding_dim, hidden_size=hidden_dim, num_layers=num_lst_layers,
@@ -181,6 +175,9 @@ def hyper_parameter_tuning():
     test = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'test')
     test_dataloader = DataLoader(test, shuffle=False)
 
+    # get pre-trained embedding
+    glove = Vocab(Counter(word_dict), vectors="glove.6B.300d", specials=SPECIAL_TOKENS)
+
     a = next(iter(train_dataloader))
     # a[0] -> word - idx of a sentence
     # a[1] -> pos - idx of a sentence
@@ -207,8 +204,15 @@ def hyper_parameter_tuning():
             for pos_e_d in pos_embedding_dim_arr:
                 for hidden in hidden_dim_arr:
                     for num_lstm_layers in LSTM_LAYERS:
-                        model = AdvancedDnnDependencyParser(word_e_d, pos_e_d, hidden, word_vocab_size, tag_vocab_size,
-                                                            num_lst_layers=num_lstm_layers).to(device)
+                        if USE_PRETRAINED:
+                            model = AdvancedDnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM,
+                                                                word_vocab_size,
+                                                                tag_vocab_size, word_embedding_table=glove.vectors).to(
+                                device)
+                        else:
+                            model = AdvancedDnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM,
+                                                                word_vocab_size,
+                                                                tag_vocab_size).to(device)
                         if use_cuda:
                             model.cuda()
 
@@ -291,6 +295,10 @@ def main():
     test = PosDataset(word_cnt, word_dict, pos_dict, data_dir, 'test')
     test_dataloader = DataLoader(test, shuffle=False)
 
+    # get pre-trained embedding
+    glove = Vocab(Counter(word_dict), vectors="glove.6B.300d", specials=SPECIAL_TOKENS)
+
+
     a = next(iter(train_dataloader))
     # a[0] -> word - idx of a sentence
     # a[1] -> pos - idx of a sentence
@@ -303,8 +311,12 @@ def main():
     print(tag_vocab_size)
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
-
-    model = AdvancedDnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size, tag_vocab_size).to(device)
+    if USE_PRETRAINED:
+        model = AdvancedDnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size,
+                                        tag_vocab_size, word_embedding_table=glove.vectors).to(device)
+    else:
+        model = AdvancedDnnDependencyParser(WORD_EMBEDDING_DIM, POS_EMBEDDING_DIM, HIDDEN_DIM, word_vocab_size,
+                                            tag_vocab_size).to(device)
     if use_cuda:
         model.cuda()
 
