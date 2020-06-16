@@ -23,7 +23,7 @@ WORD_EMBEDDING_DIM = 100
 POS_EMBEDDING_DIM = 25
 HIDDEN_DIM = 125
 LEARNING_RATE = 0.01
-EARLY_STOPPING = 10  # num epochs with no validation acc improvement to stop training
+EARLY_STOPPING = 3  # num epochs with no validation acc improvement to stop training
 PATH = "./basic_model_best_params"
 
 HYPER_PARAMETER_TUNING = True
